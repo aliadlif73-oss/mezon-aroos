@@ -258,7 +258,7 @@ body.premium-landing{
  .premium-landing .top .brand span{font-size:16px}
  .premium-landing .top-nav{display:none}
  .premium-landing .top .btn{font-size:12px;min-height:43px;padding:0 14px}
- .premium-landing .hero.hero{grid-template-columns:1fr;min-height:auto;border-radius:20px;margin-top:11px}
+ .premium-landing .hero.hero{grid-template-columns:minmax(0,1fr);min-height:auto;border-radius:20px;margin-top:11px}
  .premium-landing .hero__copy{padding:30px 23px 26px}
  .premium-landing .hero .display{font-size:clamp(32px,8.2vw,45px)}
  .premium-landing .hero .sub-l{font-size:14.5px}
