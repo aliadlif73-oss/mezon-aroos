@@ -553,15 +553,15 @@ test('without SMS invites the bot offers messenger buttons and /i/ is a send pag
 
 // ---------- landing page and salon inquiries ----------
 
-test('free trial salon: built from the landing form, one per mobile, 5 images and 10 hours enforced by the server',async()=>{const e=tgEnv(fixture());e.KIE_API_KEY='mock';const tg=mockTelegram();const previous=globalThis.fetch;let tasks=0;
+test('free trial salon: built from the landing form, one per mobile, 5 images and 72 hours enforced by the server',async()=>{const e=tgEnv(fixture());e.KIE_API_KEY='mock';const tg=mockTelegram();const previous=globalThis.fetch;let tasks=0;
  const net=globalThis.fetch;globalThis.fetch=async(url,opts)=>{const u=String(url);if(u.includes('file-base64-upload'))return Response.json({success:true,data:{downloadUrl:'https://provider.example/'+crypto.randomUUID()+'.jpg'}});if(u.includes('createTask')){tasks++;return Response.json({code:200,data:{taskId:'t'+tasks}})}return net(url,opts)};
  try{await linkOwnerChat(e);
   const body={name:'سارا',salon:'مزون رز',city:'تهران',phone:'۰۹۱۲۱۲۳۴۵۶۷',brand:'#8E3050',consent:true,username:'sara.rose',password:'Passw0rd!x',subdomain:'rose'};
   assert.equal((await call(e,'/api/trial',{...body,consent:false})).status,400);
   assert.equal((await call(e,'/api/trial',{...body,website:'x'})).status,200);assert.equal(e.DB.sql.prepare('SELECT count(*) n FROM trials').get().n,0,'honeypot is dropped');
-  const r=await call(e,'/api/trial',body);assert.equal(r.status,200,JSON.stringify(r));assert.match(r.data.path,/^\/s\/t-[a-f0-9]{8}$/);assert.equal(r.data.images,5);assert.equal(r.data.hours,10);
+  const r=await call(e,'/api/trial',body);assert.equal(r.status,200,JSON.stringify(r));assert.match(r.data.path,/^\/s\/t-[a-f0-9]{8}$/);assert.equal(r.data.images,5);assert.equal(r.data.hours,72);
   assert.equal((await call(e,'/api/trial',body)).status,409,'one trial per mobile');
-  const slug=r.data.path.slice(3),row=e.DB.sql.prepare('SELECT * FROM trials').get();assert.equal(row.started_at,null,'the 10-hour clock has not started at signup');assert.equal(r.data.expires_at,null);assert.equal(r.data.sandbox,true);
+  const slug=r.data.path.slice(3),row=e.DB.sql.prepare('SELECT * FROM trials').get();assert.equal(row.started_at,null,'the 72-hour clock has not started at signup');assert.equal(r.data.expires_at,null);assert.equal(r.data.sandbox,true);
   assert(toOwner(tg).find(t=>/مزون رز/.test(t)&&new RegExp(slug).test(t)),'owner chat got the trial link');
   const pub=await call(e,'/api/s/'+slug+'/public');assert.equal(pub.status,200);assert.equal(pub.data.trial.images_left,5);assert.equal(pub.data.trial.brand,'#8E3050');
   const g=await guest(e,{slug}),original=await upload(e,{slug},g);
@@ -1151,7 +1151,7 @@ const settingsBody=(extra={})=>({generation_enabled:true,reference_verified:true
 const NO_IMG='الان امکان ساخت تصویر نیست؛ درخواستت را برای مزون بفرست';
 const trialBody={name:'سارا',salon:'مزون رز',city:'تهران',phone:'۰۹۱۲۱۲۳۴۵۶۷',brand:'#8E3050',consent:true,username:'sara.rose',password:'Passw0rd!x',subdomain:'rose'};
 
-test('A sandbox: an unapproved trial salon can make its 5 images; the 10-hour clock starts at the first image, not at signup; approval ends the trial strip',async()=>{
+test('A sandbox: an unapproved trial salon can make its 5 images; the 72-hour clock starts at the first image, not at signup; approval ends the trial strip',async()=>{
  const P=paid(),{e}=P;try{
   const r=await call(e,'/api/trial',trialBody);assert.equal(r.status,200,JSON.stringify(r));const slug=r.data.path.slice(3);
   e.DB.sql.prepare('UPDATE trials SET created_at=?').run(Date.now()-3*86400000);
