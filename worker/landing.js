@@ -127,7 +127,7 @@ const faq=[
  ['با عکس مشتری‌ها چه می‌شود؟','عکس‌هایی که برای درخواست فرستاده نمی‌شوند ۱۵ دقیقه بعد خودکار پاک می‌شوند و مشتری می‌تواند همان لحظه خودش هم پاکشان کند. عکس مشتری جایی نمایش عمومی ندارد.'],
  ['لباس در نتیجه دقیقاً همان لباس است؟','هدف همین است: لباس شما روی عکس مشتری نشانده می‌شود و چهره و اندامش حفظ می‌شود. نتیجه یک شبیه‌سازی برای تصمیم‌گیری اولیه است و رنگ، پارچه و دوخت نهایی را با پرو حضوری تأیید می‌کنید.'],
  ['اگر مشتری علاقه‌مند شد چه؟','مشتری می‌تواند درخواستش را با نام و شماره ثبت کند و در ربات تلگرام و پنل مزون به شما می‌رسد. بعد از پیگیری، وضعیتش را ثبت می‌کنید.'],
- ['چطور اطلاعات پلن‌ها و دموی اختصاصی را دریافت کنم؟','نام مزون، شهر و موبایل را در فرم همین صفحه ثبت کنید تا تیم آینه برای هماهنگی دمو با شما تماس بگیرد.']
+ ['آزمایش سه‌روزه چطور فعال می‌شود؟','نام مزون، شهر و موبایل خود را ثبت کنید. تیم آینه برای هماهنگی فعال‌سازی تماس می‌گیرد. زمان نسخه آزمایشی ۷۲ ساعت از اولین تولید تصویر و سقف اولیه آن ۵ تصویر است.'],['چطور اطلاعات پلن‌ها و دموی اختصاصی را دریافت کنم؟','فرم درخواست دمو را تکمیل کنید تا برای معرفی عملکرد و پلن‌های آینه با شما تماس بگیریم.']
 ];
 const title='آینه هوشمند | تجربه تخصصی انتخاب لباس عروس برای مزون‌ها';
 const desc='آینه هوشمند به عروس کمک می‌کند مدل‌های مزون را روی تصویر خودش ببیند، مقایسه کند و برای پرو نهایی تصمیم بگیرد. درخواست دموی اختصاصی.';
@@ -144,12 +144,21 @@ const demoForm = `<form class="demo-form" aria-label="درخواست دموی ا
 <label>نام مزون یا مجموعه<input name="salon" required minlength="2" maxlength="80" autocomplete="organization" placeholder="نام مزون"></label>
 <label>شهر<input name="city" required minlength="2" maxlength="40" autocomplete="address-level2" placeholder="نام شهر"></label>
 <label>شماره موبایل<input name="phone" required type="tel" inputmode="tel" maxlength="20" autocomplete="tel" dir="ltr" placeholder="09xxxxxxxxx"></label>
-<input name="website" type="text" hidden autocomplete="off" tabindex="-1">
+<input name="chosen" type="hidden" value="دموی اختصاصی"><input name="website" type="text" hidden autocomplete="off" tabindex="-1">
 <p class="demo-privacy">با ثبت درخواست، اجازه تماس تیم آینه برای هماهنگی دمو را می‌دهید.</p>
 <button class="btn btn--primary" type="submit">ثبت درخواست دمو</button>
 <p role="status" aria-live="polite" hidden></p>
 </form><script>(function(){
  const form=document.querySelector('.demo-form'),btn=form.querySelector('button'),status=form.querySelector('[role=status]');
+ const leadBox=document.getElementById('demo-request');
+ document.addEventListener('click',function(event){
+  const link=event.target.closest('[data-lead-mode]');if(!link)return;
+  const trial=link.dataset.leadMode==='trial';
+  form.elements.chosen.value=trial?'درخواست آزمایش رایگان ۳روزه':'درخواست دموی اختصاصی';
+  leadBox.querySelector('h2').textContent=trial?'درخواست استفاده آزمایشی ۳روزه':'دموی اختصاصی آینه برای مزون شما';
+  leadBox.querySelector('p').textContent=trial?'مشخصات مزون را ثبت کنید؛ تیم آینه برای هماهنگی فعال‌سازی آزمایش با شما تماس می‌گیرد.':'مشخصات مجموعه را وارد کنید تا با شما تماس بگیریم.';
+  btn.textContent=trial?'ثبت درخواست آزمایش ۳روزه':'ثبت درخواست دمو';
+ });
  form.addEventListener('submit',async function(e){e.preventDefault();btn.disabled=true;status.hidden=true;
   const body=Object.fromEntries(new FormData(form));body.consent=true;
   try{const r=await fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'درخواست ثبت نشد');form.reset();status.textContent='درخواست ثبت شد. برای هماهنگی دمو با شما تماس می‌گیریم.';status.dataset.state='ok';}
@@ -159,6 +168,95 @@ const demoForm = `<form class="demo-form" aria-label="درخواست دموی ا
 })();</script>`;
 
 const premiumLandingCSS=String.raw`
+/* v2 editorial homepage: motion, devices, privacy, corporate identity */
+.premium-landing .top{min-height:78px}
+.premium-landing .top-nav{margin-inline-start:auto}
+.premium-landing .hero-film{position:relative;isolation:isolate;min-height:580px;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#836750 0%,#2e211c 65%,#1b1512);display:grid;place-items:center}
+.premium-landing .hero-film__scene{position:absolute;inset:0;display:grid;place-items:center}
+.premium-landing .hero-film__scene img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center;filter:saturate(.94);transform:scale(1.025)}
+.premium-landing .hero-film__after{animation:ayneh-reveal 12s ease-in-out infinite;opacity:0}
+.premium-landing .hero-film__shade{position:absolute;z-index:1;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(20,13,10,.85),transparent 32%,transparent 70%,rgba(20,13,10,.2))}
+.premium-landing .hero-film__brand{position:absolute;z-index:2;top:22px;left:24px;font:700 13px/1.3 system-ui;letter-spacing:.21em;color:#f9edd7}
+.premium-landing .hero-film__brand span{display:block;font-size:9px;letter-spacing:.15em;font-weight:400;opacity:.75;margin-top:5px}
+.premium-landing .hero-film__caption{position:absolute;z-index:2;bottom:76px;inset-inline:20px;text-align:center;color:#f9e9d1;font-family:var(--display);font-size:19px;font-weight:800}
+.premium-landing .hero-film__caption-before{animation:ayneh-before 12s ease-in-out infinite}
+.premium-landing .hero-film__caption-after{position:absolute;inset:0;opacity:0;animation:ayneh-after 12s ease-in-out infinite}
+.premium-landing .hero-film__pill{position:absolute;z-index:2;bottom:24px;inset-inline:20px;max-width:max-content;margin:auto;padding:8px 14px;border:1px solid rgba(239,209,160,.48);border-radius:99px;background:rgba(29,20,15,.72);color:#eedac3;font-size:11px;text-align:center}
+@keyframes ayneh-reveal{0%,34%{opacity:0}43%,82%{opacity:1}93%,100%{opacity:0}}
+@keyframes ayneh-before{0%,34%{opacity:1}43%,82%{opacity:0}93%,100%{opacity:1}}
+@keyframes ayneh-after{0%,34%{opacity:0}43%,82%{opacity:1}93%,100%{opacity:0}}
+.premium-landing .device-section{border-top:1px solid #e1d2c0;padding-top:44px}
+.premium-landing .device-heading{display:flex;gap:24px;justify-content:space-between;align-items:end}
+.premium-landing .device-heading>p{max-width:34em;color:#776351;line-height:2}
+.premium-landing .device-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:26px}
+.premium-landing .device-card{background:#fefbf6;border:1px solid #e8d7c1;border-radius:22px;overflow:hidden;transition:transform .2s,box-shadow .2s}
+.premium-landing .device-card:hover{transform:translateY(-4px);box-shadow:0 15px 30px -25px #362418}
+.premium-landing .device-art{height:214px;position:relative;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 55% 26%,#ece0d0,#d9c9b3)}
+.premium-landing .device-hardware{background:linear-gradient(130deg,#34302d,#171717);border:5px solid #272421;box-shadow:0 18px 24px -16px #362318;position:relative;display:flex;align-items:center;justify-content:center}
+.premium-landing .device-screen{width:100%;height:100%;overflow:hidden;background:#4e3f37;position:relative}
+.premium-landing .device-screen img{height:100%;width:100%;object-fit:cover;object-position:center 35%}
+.premium-landing .device-art--tablet .device-hardware{width:144px;height:106px;border-radius:13px;transform:rotate(-7deg);padding:6px}
+.premium-landing .device-art--tablet .device-screen{border-radius:4px}
+.premium-landing .device-art--kiosk .device-hardware{width:91px;height:149px;border-radius:10px;padding:5px;margin-top:-30px}
+.premium-landing .device-art--kiosk .device-hardware::after{content:"";position:absolute;top:100%;height:25px;width:12px;background:#282523;left:calc(50% - 6px)}
+.premium-landing .device-art--kiosk .device-art{overflow:hidden}
+.premium-landing .device-art--kiosk::after{content:"";position:absolute;width:76px;height:7px;border-radius:50%;background:#292523;bottom:21px}
+.premium-landing .device-art--phone .device-hardware{width:75px;height:150px;border-radius:17px;padding:5px}
+.premium-landing .device-art--phone .device-screen{border-radius:9px}
+.premium-landing .device-art--phone .device-hardware::before{content:"";height:4px;width:23px;border-radius:5px;position:absolute;top:4px;left:calc(50% - 11.5px);z-index:1;background:#111}
+.premium-landing .device-art--tv .device-hardware{width:174px;height:108px;border-radius:6px;padding:5px;margin-top:-20px}
+.premium-landing .device-art--tv .device-hardware::after{content:"";position:absolute;top:100%;height:24px;width:8px;left:calc(50% - 4px);background:#302823}
+.premium-landing .device-art--tv::after{content:"";position:absolute;bottom:40px;width:78px;height:6px;background:#302823;border-radius:99px}
+.premium-landing .device-card__text{padding:19px 16px 22px}
+.premium-landing .device-card__text>span{color:#9e7a48;font-size:11px;font-weight:800}
+.premium-landing .device-card__text h3{font-family:var(--display);font-size:19px;color:#36261b;margin:6px 0}
+.premium-landing .device-card__text p{font-size:13px;color:#766351;line-height:1.9}
+.premium-landing .devices-note{font-size:12px;color:#816b55;line-height:2;margin-top:18px}
+.premium-landing .privacy-story{background:#241a16;border:1px solid #715438;border-radius:26px;padding:clamp(22px,4vw,54px);color:#f5dfbe;overflow:hidden}
+.premium-landing .privacy-story__head{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:end;border-bottom:1px solid rgba(220,179,124,.32);padding-bottom:24px}
+.premium-landing .privacy-story__head .display{color:#f2d7af}
+.premium-landing .privacy-story__head>p{color:#d5c1a8;line-height:2;font-size:15px}
+.premium-landing .privacy-story__lines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:35px;row-gap:0}
+.premium-landing .privacy-story__line{display:grid;grid-template-columns:36px 1fr 28px;gap:13px;align-items:center;min-height:113px;border-bottom:1px solid rgba(220,179,124,.18)}
+.premium-landing .privacy-story__index{color:#c49f6c;font:700 13px system-ui}
+.premium-landing .privacy-story__line b{font-family:var(--display);font-size:17px;color:#f9ead4}
+.premium-landing .privacy-story__line p{font-size:12px;color:#c7b9a6;line-height:1.8;margin:7px 0 0}
+.premium-landing .privacy-story__line svg{color:#d0ab7b;width:24px;height:24px}
+.premium-landing .corporate-footer{margin:60px 0 14px;background:linear-gradient(110deg,#201814,#35251c);padding:34px clamp(18px,3vw,42px) 18px;border-radius:24px;color:#f3e2c9;border:1px solid #6a4e34}
+.premium-landing .corporate-footer__main{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:20px;padding-bottom:26px}
+.premium-landing .corporate-footer__brand{display:flex;gap:12px;align-items:start}
+.premium-landing .corporate-footer__brand img{flex:none}
+.premium-landing .corporate-footer__brand b{font-family:var(--display);font-size:21px;color:#f2d6a8}
+.premium-landing .corporate-footer__brand p{font-size:12px;line-height:1.9;color:#c7b49b}
+.premium-landing .corporate-footer__detail{display:grid;align-content:start;gap:10px}
+.premium-landing .corporate-footer__detail span{color:#c9a474;font-size:12px;font-weight:700}
+.premium-landing .corporate-footer a{color:#f7ead7;padding:0;min-height:unset;line-height:1.8;font-size:13px;text-decoration:none}
+.premium-landing .corporate-footer a:hover{text-decoration:underline}
+.premium-landing .corporate-footer__bottom{display:flex;justify-content:space-between;align-items:center;gap:16px;border-top:1px solid rgba(220,179,124,.23);padding-top:16px}
+.premium-landing .corporate-footer__bottom small{color:#b5a08a;font-size:12px}
+@media(max-width:970px){.premium-landing .device-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.premium-landing .corporate-footer__main{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){
+ .premium-landing .top{min-height:64px}
+ .premium-landing .hero-film{min-height:350px;height:390px}
+ .premium-landing .hero-film__scene img{object-fit:contain}
+ .premium-landing .hero-film__brand{top:16px;left:16px}
+ .premium-landing .hero-film__caption{bottom:72px;font-size:16px}
+ .premium-landing .device-heading{display:block}
+ .premium-landing .device-grid{gap:12px}
+ .premium-landing .device-art{height:177px}
+ .premium-landing .device-card__text{padding:14px 12px 18px}
+ .premium-landing .device-card__text h3{font-size:16px}
+ .premium-landing .device-card__text p{font-size:12px}
+ .premium-landing .privacy-story__head{grid-template-columns:1fr;gap:0}
+ .premium-landing .privacy-story__lines{grid-template-columns:1fr}
+ .premium-landing .privacy-story__line{min-height:105px}
+ .premium-landing .corporate-footer{margin-top:38px}
+ .premium-landing .corporate-footer__main{grid-template-columns:1fr;gap:21px}
+ .premium-landing .corporate-footer__bottom{align-items:start;flex-direction:column}
+}
+@media(max-width:380px){.premium-landing .device-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.premium-landing .hero-film__after{animation:none;opacity:1}.premium-landing .hero-film__caption-before{display:none}.premium-landing .hero-film__caption-after{opacity:1;animation:none}}
+
 /* Ayneh Luxury Classic — scoped to the public marketing page only */
 body.premium-landing{
  --glass:#f6efe5;--glass-2:#ecdfce;--surface:#fffaf3;--surface-2:#f8f0e5;
@@ -317,17 +415,18 @@ main>section:not(.hero){margin-block:36px}
 .landing-registration [hidden]{display:none!important}
 `+premiumLandingCSS+'</style></head><body class="premium-landing">'
 +'<a class="skip" href="#main">پرش به محتوای اصلی</a>'
-+'<div class="wrap"><header class="top"><a class="brand" href="/" aria-label="مزون آینه">'+brandImg(36)+'<span>مزون آینه</span></a><nav class="top-nav" aria-label="دسترسی سریع"><a href="#product">محصول</a><a href="#why">مزایا</a><a href="#path">مسیر تجربه</a><a href="#faq">سؤالات متداول</a></nav><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a></header>'
++'<div class="wrap"><header class="top"><a class="brand" href="/" aria-label="مزون آینه">'+brandImg(36)+'<span>مزون آینه</span></a><nav class="top-nav" aria-label="دسترسی سریع"><a href="#product">محصول</a><a href="#devices">دستگاه‌ها</a><a href="#path">مسیر تجربه</a><a href="#faq">سؤالات متداول</a></nav></header>'
 +'<main id="main">'
-+'<section class="hero" aria-labelledby="h1"><div class="hero__copy"><span class="eyebrow">راهکار هوشمند و تخصصی مزون‌های عروس</span><h1 class="display" id="h1">آینهٔ هوشمند؛ تجربه‌ای فراتر از انتخاب لباس عروس</h1><p class="sub-l">اجازه دهید عروس لباس‌های مزون شما را روی تصویر خودش ببیند، مدل‌های دلخواهش را مقایسه کند و برای پرو حضوری با انتخاب‌های مشخص پیش برود.</p><div class="hero__cta"><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a><a class="btn btn--ghost" href="#product">مشاهده عملکرد آینه</a></div><div class="lead-box" id="demo-request"><h2>دموی اختصاصی آینه برای مزون شما</h2><p>مشخصات مجموعه را وارد کنید تا با شما تماس بگیریم.</p>'+demoForm+'</div></div><img class="hero__photo" src="/demo/salon-setup.webp" alt="مشاور مزون و مشتری کنار آینهٔ هوشمند لباس عروس" width="1536" height="1024" fetchpriority="high"></section>'
++'<section class="hero" aria-labelledby="h1"><div class="hero__copy"><span class="eyebrow">راهکار هوشمند و تخصصی مزون‌های عروس</span><h1 class="display" id="h1">آینهٔ هوشمند؛ تجربه‌ای فراتر از انتخاب لباس عروس</h1><p class="sub-l">اجازه دهید عروس لباس‌های مزون شما را روی تصویر خودش ببیند، مدل‌های دلخواهش را مقایسه کند و برای پرو حضوری با انتخاب‌های مشخص پیش برود.</p><div class="hero__cta"><a class="btn btn--primary" href="#demo-request" data-lead-mode="trial">۳ روز آزمایشی رایگان</a><a class="btn btn--ghost" href="/s/demo">مشاهده عملکرد آینه</a></div><div class="lead-box" id="demo-request"><h2>دموی اختصاصی آینه برای مزون شما</h2><p>مشخصات مجموعه را وارد کنید تا با شما تماس بگیریم.</p>'+demoForm+'</div></div><div class="hero-film" role="img" aria-label="نمایش متحرک قبل و بعد پرو مجازی؛ همان عروس با لباس معمولی و لباس عروس"><div class="hero-film__scene"><img class="hero-film__before" src="/catalog/dress/demo-before.webp" alt="" width="480" height="720" fetchpriority="high"><img class="hero-film__after" src="/catalog/dress/demo-after.webp" alt="" width="480" height="720" fetchpriority="high"></div><div class="hero-film__shade"></div><div class="hero-film__brand">AYNEH <span>VIRTUAL TRY-ON</span></div><div class="hero-film__caption"><span class="hero-film__caption-before">پیش از آینه</span><span class="hero-film__caption-after">همان چهره، لباسی متفاوت</span></div><span class="hero-film__pill">نمایش تغییر لباس روی تصویر واقعی مشتری</span></div></section>'
 +'<section id="product" class="product-layout" aria-labelledby="product-title"><div><h2 class="display" id="product-title">لباس‌های خود مزون، روی تصویر مشتری</h2><p class="sub-l">آینه لباس‌های مزون شما را روی تصویر مشتری نشان می‌دهد. خط روی عکس را جابه‌جا کنید تا نمونهٔ قبل و بعد را ببینید.</p><a class="btn btn--ghost" href="/s/demo">امتحان نمونهٔ پرو مجازی</a></div>'
 +'<div class="stage"><span class="float float--a">'+ic('spark')+'چهرهٔ خودش، لباس شما</span><span class="float float--b">'+ic('heart')+'همین‌جا، بدون پرو سنگین</span><div class="dev"><div class="cmp" id="cmp"><img src="/catalog/dress/demo-before.webp" alt="عکس مشتری پیش از پرو" width="480" height="720"><div class="cmp__after"><img src="/catalog/dress/demo-after.webp" alt="همان عکس با لباس مزون" width="480" height="720" fetchpriority="high"></div><span class="cmp__line"></span><span class="cmp__grip">'+grip+'</span><span class="cmp__tag cmp__tag--b">قبل</span><span class="cmp__tag cmp__tag--a">بعد</span><input class="cmp__range" id="cmpr" type="range" min="0" max="100" value="50" dir="ltr" aria-label="مقایسهٔ قبل و بعد؛ با کلیدهای جهت خط را جابه‌جا کن"></div></div><div class="dev__stand"></div><div class="dev__base"></div><p class="cap">مقایسهٔ قبل و بعد پرو مجازی</p></div></section>'
 +'<section aria-labelledby="why"><span class="eyebrow">چرا داخل مزون جواب می‌دهد</span><h2 class="display" id="why">برای شما چه چیزی عوض می‌شود؟</h2><div class="why"><div>'+ic('dress')+'<p><b>پرو حضوری هدفمندتر</b><span>مشتری با چند لباس مورد علاقه سراغ پرو می‌رود.</span></p></div><div>'+ic('users')+'<p><b>همراهان هم شریک می‌شوند</b><span>خانواده روی صفحه می‌بینند و تصمیم سریع‌تر می‌شود.</span></p></div><div>'+ic('clock')+'<p><b>وقت مشاور آزاد می‌شود</b><span>هر لباس را لازم نیست از قفسه بیاورد و بپوشاند.</span></p></div><div>'+ic('chart')+'<p><b>بدانید چه چیزی دیده می‌شود</b><span>آمار نشان می‌دهد کدام لباس‌ها بیشتر امتحان می‌شوند.</span></p></div><div>'+ic('chat')+'<p><b>درخواست آماده</b><span>مشتری علاقه‌مند، اسم و شمارهٔ خودش را می‌گذارد.</span></p></div><div>'+ic('eye')+'<p><b>مزون شما دیده می‌شود</b><span>تجربه‌ای که مشتری برای دوستانش تعریف می‌کند.</span></p></div></div></section>'
++'<section id="devices" class="device-section" aria-labelledby="devices-title"><div class="device-heading"><div><span class="eyebrow">اجرای متناسب با فضای شما</span><h2 class="display" id="devices-title">آینه، روی نمایشگر مناسب مزون شما</h2></div><p>از تجربه شخصی روی گوشی تا نمایش حرفه‌ای روی نمایشگرهای بزرگ؛ تیم آینه گزینه مناسب فضای مزونتان را معرفی می‌کند.</p></div><div class="device-grid"><article class="device-card"><div class="device-art device-art--tablet" aria-hidden="true"><div class="device-hardware"><div class="device-screen"><img src="/catalog/dress/demo-after.webp" alt="" width="480" height="720" loading="lazy" decoding="async"></div></div></div><div class="device-card__text"><span>۰۱ / انعطاف‌پذیر</span><h3>تبلت لمسی</h3><p>تجربه شخصی و قابل‌جابه‌جایی کنار مشاور مزون.</p></div></article><article class="device-card"><div class="device-art device-art--kiosk" aria-hidden="true"><div class="device-hardware"><div class="device-screen"><img src="/catalog/dress/demo-after.webp" alt="" width="480" height="720" loading="lazy" decoding="async"></div></div></div><div class="device-card__text"><span>۰۲ / شاخص</span><h3>کیوسک لمسی</h3><p>ایستگاه اختصاصی پرو مجازی با حضور چشمگیر در مزون.</p></div></article><article class="device-card"><div class="device-art device-art--phone" aria-hidden="true"><div class="device-hardware"><div class="device-screen"><img src="/catalog/dress/demo-after.webp" alt="" width="480" height="720" loading="lazy" decoding="async"></div></div></div><div class="device-card__text"><span>۰۳ / در دسترس</span><h3>گوشی هوشمند</h3><p>مشاهده و انتخاب آسان از طریق موبایل مشتری.</p></div></article><article class="device-card"><div class="device-art device-art--tv" aria-hidden="true"><div class="device-hardware"><div class="device-screen"><img src="/catalog/dress/demo-after.webp" alt="" width="480" height="720" loading="lazy" decoding="async"></div></div></div><div class="device-card__text"><span>۰۴ / جمعی</span><h3>تلویزیون هوشمند</h3><p>نمایش انتخاب‌ها روی صفحه بزرگ برای همراهان عروس.</p></div></article></div><p class="devices-note">امکانات لمس و نحوه اتصال، بسته به دستگاه و پلن انتخابی متفاوت است؛ جزئیات در دموی اختصاصی بررسی می‌شود.</p></section>'
 +'<section aria-labelledby="path"><h2 class="display" id="path">مسیر تجربهٔ مشتری با آینه</h2><ol class="journey"><li><b>۱. ثبت تصویر</b><span>مشتری یک عکس از خودش می‌گیرد.</span></li><li><b>۲. انتخاب مدل</b><span>لباس‌های مزون را مرور می‌کند.</span></li><li><b>۳. مشاهده و مقایسه</b><span>مدل‌ها را روی تصویر خودش می‌بیند.</span></li><li><b>۴. پرو حضوری</b><span>گزینه‌های منتخب را در مزون می‌پوشد.</span></li></ol></section>'
 
-+'<section aria-labelledby="priv"><span class="eyebrow">اعتماد</span><h2 class="display" id="priv">مشتری با خیال راحت عکس می‌گیرد</h2><div class="safe"><span>'+ic('trash')+'عکس بعد از ۱۵ دقیقه پاک می‌شود</span><span>'+ic('lock')+'جایی نمایش عمومی ندارد</span><span>'+ic('trash')+'خودش هم می‌تواند فوری پاک کند</span><span>'+ic('shield')+'نتیجه شبیه‌سازی است؛ پرو حضوری نهایی است</span></div></section>'
-+'<section class="demo-layout" aria-labelledby="final-demo-title"><div><h2 class="display" id="final-demo-title">عملکرد آینه را در مزون خودتان تصور کنید</h2><p class="sub-l">برای آشنایی با تجربه آینه و پلن‌ها، درخواست دموی اختصاصی ثبت کنید.</p><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a></div></section>'
++'<section class="privacy-story" aria-labelledby="priv"><div class="privacy-story__head"><div><span class="eyebrow">اعتماد به تجربه آینه</span><h2 class="display" id="priv">حریم خصوصی، بخشی از طراحی آینه</h2></div><p>عکس مشتری برای نمایش عمومی نیست. مسیر تصویر، کنترل و حذف آن را شفاف توضیح می‌دهیم.</p></div><div class="privacy-story__lines"><div class="privacy-story__line"><span class="privacy-story__index">۰۱</span><div><b>حذف خودکار تصاویر موقت</b><p>عکس‌هایی که برای درخواست ارسال نشده‌اند، پس از ۱۵ دقیقه پاک می‌شوند.</p></div>'+ic('clock')+'</div><div class="privacy-story__line"><span class="privacy-story__index">۰۲</span><div><b>بدون نمایش عمومی</b><p>عکس مشتری در گالری عمومی سایت منتشر نمی‌شود.</p></div>'+ic('lock')+'</div><div class="privacy-story__line"><span class="privacy-story__index">۰۳</span><div><b>اختیار حذف در دست مشتری</b><p>مشتری می‌تواند تصویر موقت خود را همان لحظه حذف کند.</p></div>'+ic('trash')+'</div><div class="privacy-story__line"><span class="privacy-story__index">۰۴</span><div><b>پرو واقعی، تصمیم نهایی</b><p>تصویر شبیه‌سازی است؛ اندازه، پارچه و دوخت با پرو حضوری تأیید می‌شود.</p></div>'+ic('shield')+'</div></div></section>'
++'<section class="demo-layout" aria-labelledby="final-demo-title"><div><h2 class="display" id="final-demo-title">عملکرد آینه را در مزون خودتان تصور کنید</h2><p class="sub-l">برای آشنایی با تجربه آینه و پلن‌ها، درخواست دموی اختصاصی ثبت کنید.</p><a class="btn btn--primary" href="#demo-request" data-lead-mode="demo">درخواست دموی اختصاصی</a></div></section>'
 
 +'<section aria-labelledby="faq"><h2 class="display" id="faq">سؤال‌های مزون‌دارها</h2>'+faq.map(([q,a])=>'<details><summary>'+q+'</summary><p>'+a+'</p></details>').join('')+'</section>'
-+'</main><footer><span>© مزون آینه</span><span><a href="/s/demo">نمونه عملکرد</a> · <a href="#demo-request">درخواست دمو</a> · <a href="/privacy">قوانین و حریم خصوصی</a> · <a href="'+BOT_URL+'" rel="noopener">ربات تلگرام</a></span></footer></div><script>'+js+'</script></body></html>';
++'</main><footer class="corporate-footer"><div class="corporate-footer__main"><div class="corporate-footer__brand">'+brandImg(46)+'<div><b>آینه | AYNEH</b><p>راهکار هوشمند انتخاب و پیش‌نمایش لباس عروس برای مزون‌ها</p></div></div><div class="corporate-footer__detail"><span>وب‌سایت رسمی</span><a href="https://ayneh-mezon.site/">ayneh-mezon.site</a></div><div class="corporate-footer__detail"><span>هماهنگی معرفی و آزمایش</span><a href="#demo-request" data-lead-mode="demo">فرم درخواست معرفی اختصاصی</a></div><div class="corporate-footer__detail"><span>ارتباط از طریق پیام‌رسان</span><a href="'+BOT_URL+'" target="_blank" rel="noopener noreferrer">ربات رسمی تلگرام آینه</a></div></div><div class="corporate-footer__bottom"><small>© مزون آینه — حقوق محتوا محفوظ است</small><a href="/privacy">قوانین و حریم خصوصی</a></div></footer></div><script>'+js+'</script></body></html>';
 export const landingHTML=landingFor('');
