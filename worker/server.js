@@ -208,7 +208,7 @@ export async function api(req,env){const u=new URL(req.url),path=u.pathname;must
   const b=await req.json().catch(()=>({}));
   if(String(b.website||'').trim())return J({ok:true});// honeypot: bots fill it, people never see it
   must(b.consent===true,'برای ارسال، تأیید تماس لازم است');
-  const name=text(String(b.name||''),60),salon=text(String(b.salon||''),80),city=text(String(b.city||''),40),note=text(String(b.note||''),300),chosen=text(String(b.chosen||''),90);
+  const name=text(String(b.name||''),60)||'ثبت نشده',salon=text(String(b.salon||''),80),city=text(String(b.city||''),40),note=text(String(b.note||''),300),chosen=text(String(b.chosen||''),90);
   must(name.length>=2,'نام را بنویس');must(salon.length>=2,'نام مزون را بنویس');
   const tel=phone(b.phone),id=uid();
   await run(db,'INSERT INTO inquiries(id,name,salon,city,phone,note,chosen,created_at) VALUES(?,?,?,?,?,?,?,?)',id,name,salon,city,tel,note,chosen,Date.now());
