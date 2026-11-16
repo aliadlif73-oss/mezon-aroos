@@ -569,7 +569,7 @@ test('free trial salon: built from the landing form, one per mobile, 5 images an
   assert.equal((await call(e,'/api/s/'+slug+'/public')).data.trial.started,false);
   // sandbox: an unapproved trial salon can already make its 5 images; the clock starts with the first one
   assert.equal((await gen()).status,200);assert.equal(tasks,1);
-  const t1=e.DB.sql.prepare('SELECT * FROM trials').get();assert.ok(t1.started_at>0);assert.ok(Math.abs(t1.expires_at-t1.started_at-36000000)<1000);
+  const t1=e.DB.sql.prepare('SELECT * FROM trials').get();assert.ok(t1.started_at>0);assert.ok(Math.abs(t1.expires_at-t1.started_at-72*3600000)<1000);
   for(let i=0;i<4;i++)assert.equal((await gen()).status,200);assert.equal(tasks,5);assert.equal(e.DB.sql.prepare('SELECT approved FROM salons WHERE slug=?').get(slug).approved,0,'still not approved');
   const sixth=await gen();assert.equal(sixth.status,402);assert.doesNotMatch(JSON.stringify(sixth.data),/تماس بگیرید|سهمیه|\d|۵/,'bride-facing 402 is neutral');assert.equal(tasks,5,'no paid task after the budget');
   assert.equal((await call(e,'/api/s/'+slug+'/public')).data.trial.images_left,0);
