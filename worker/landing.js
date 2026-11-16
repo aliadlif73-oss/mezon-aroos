@@ -1,4 +1,4 @@
-import {landingRegistration} from './register.js';
+
 // Home page: a sales page for boutique owners (the buyers); brides only reach it through the owners' own links. Self-contained (inline CSS/JS, own-origin assets only).
 import {baseCSS,brandImg} from './design.js';
 export const BOT_URL='https://t.me/mezon_aynehbot';
@@ -121,16 +121,16 @@ const art={
  tablet:'<svg class="art" viewBox="0 0 320 170" aria-hidden="true"><rect x="30" y="118" width="260" height="36" rx="6" fill="#c8b48a"/><rect x="104" y="34" width="112" height="86" rx="9" fill="#16191a" transform="rotate(-6 160 77)"/><rect x="110" y="40" width="100" height="74" rx="4" fill="#e9efec" transform="rotate(-6 160 77)"/><rect x="144" y="50" width="26" height="56" rx="13" fill="#d9c9a4" transform="rotate(-6 160 77)"/><circle cx="244" cy="104" r="9" fill="#2b3234"/><rect x="236" y="112" width="16" height="8" fill="#2b3234"/></svg>'
 };
 const faq=[
- ['برای نمایش در مزون چه چیزی لازم دارم؟','یک تبلت، تلویزیون هوشمند یا هر صفحه‌ای که مرورگر و اینترنت دارد. صفحهٔ مزون شما را باز می‌گذارید و مشتری همان‌جا از خودش عکس می‌گیرد. برنامه‌ای نصب نمی‌شود.'],
- ['لباس‌های مزون را چطور وارد می‌کنم؟','عکس لباس‌ها را با نامشان در ربات تلگرام مزون آینه می‌فرستید. برای نتیجهٔ دقیق‌تر از هر لباس چند نما (جلو، کنار، پشت، جزئیات) بفرستید. هر وقت خواستید لباس اضافه یا حذف می‌کنید.'],
+ ['برای استفاده از آینه در مزون چه چیزی لازم است؟','آینه متناسب با فضای مزون و دستگاه انتخابی راه‌اندازی می‌شود. روش استفاده و تجهیزات در دموی اختصاصی توضیح داده می‌شود.'],
+ ['لباس‌های مزون را چطور وارد می‌کنم؟','پس از هماهنگی و راه‌اندازی، عکس لباس‌های مزون وارد کاتالوگ اختصاصی شما می‌شود. عکس‌های واضح از جلو، پشت و جزئیات برای نتیجه بهتر توصیه می‌شوند.'],
  ['مشتری فقط لباس‌های مزون من را می‌بیند؟','بله. فقط لباس‌هایی که شما اضافه کرده‌اید نمایش داده می‌شود و مشتری روی همان‌ها خودش را می‌بیند.'],
  ['با عکس مشتری‌ها چه می‌شود؟','عکس‌هایی که برای درخواست فرستاده نمی‌شوند ۱۵ دقیقه بعد خودکار پاک می‌شوند و مشتری می‌تواند همان لحظه خودش هم پاکشان کند. عکس مشتری جایی نمایش عمومی ندارد.'],
  ['لباس در نتیجه دقیقاً همان لباس است؟','هدف همین است: لباس شما روی عکس مشتری نشانده می‌شود و چهره و اندامش حفظ می‌شود. نتیجه یک شبیه‌سازی برای تصمیم‌گیری اولیه است و رنگ، پارچه و دوخت نهایی را با پرو حضوری تأیید می‌کنید.'],
  ['اگر مشتری علاقه‌مند شد چه؟','مشتری می‌تواند درخواستش را با نام و شماره ثبت کند و در ربات تلگرام و پنل مزون به شما می‌رسد. بعد از پیگیری، وضعیتش را ثبت می‌کنید.'],
- ['هزینه چقدر است؟','برای امتحان، یک نسخهٔ آزمایشی رایگان دارید. قیمت بسته‌ها هنگام ثبت‌نام اعلام می‌شود و تا وقتی تأیید نکنید پرداختی ندارید.']
+ ['چطور اطلاعات پلن‌ها و دموی اختصاصی را دریافت کنم؟','نام مزون، شهر و موبایل را در فرم همین صفحه ثبت کنید تا تیم آینه برای هماهنگی دمو با شما تماس بگیرد.']
 ];
-const title='پرو مجازی لباس عروس داخل مزون | روی تبلت، تلویزیون یا استند · مزون آینه';
-const desc='مشتری شما داخل مزون، روی تبلت، تلویزیون یا استند، خودش را در لباس‌های مزون شما می‌بیند. بدون نصب برنامه؛ نسخهٔ آزمایشی رایگان.';
+const title='آینه هوشمند | تجربه تخصصی انتخاب لباس عروس برای مزون‌ها';
+const desc='آینه هوشمند به عروس کمک می‌کند مدل‌های مزون را روی تصویر خودش ببیند، مقایسه کند و برای پرو نهایی تصمیم بگیرد. درخواست دموی اختصاصی.';
 const ogImg='/og.jpg';
 const ld=o=>'<script type="application/ld+json">'+JSON.stringify(o).replace(/</g,'\\u003c')+'</script>';
 const jsonld=o=>ld({'@context':'https://schema.org','@graph':[
@@ -140,40 +140,23 @@ const jsonld=o=>ld({'@context':'https://schema.org','@graph':[
  {'@type':'FAQPage','inLanguage':'fa-IR','mainEntity':faq.map(([q,a])=>({'@type':'Question','name':q,'acceptedAnswer':{'@type':'Answer','text':a}}))}
 ]});
 
-const demoForm = `<form class="demo-form">
-<label>نام و نام خانوادگی<input name="name" required minlength="2" maxlength="60" autocomplete="name"></label>
-<label>نام مزون<input name="salon" required minlength="2" maxlength="80" autocomplete="organization"></label>
-<label>شماره موبایل<input name="phone" type="tel" required maxlength="20" autocomplete="tel" dir="ltr"></label>
-<label class="demo-consent"><input name="consent" type="checkbox" required> برای هماهنگی دمو با من تماس بگیرید.</label>
-<input name="website" type="text" autocomplete="off" tabindex="-1" hidden>
+const demoForm = `<form class="demo-form" aria-label="درخواست دموی اختصاصی">
+<label>نام مزون یا مجموعه<input name="salon" required minlength="2" maxlength="80" autocomplete="organization" placeholder="نام مزون"></label>
+<label>شهر<input name="city" required minlength="2" maxlength="40" autocomplete="address-level2" placeholder="نام شهر"></label>
+<label>شماره موبایل<input name="phone" required type="tel" inputmode="tel" maxlength="20" autocomplete="tel" dir="ltr" placeholder="09xxxxxxxxx"></label>
+<input name="website" type="text" hidden autocomplete="off" tabindex="-1">
+<p class="demo-privacy">با ثبت درخواست، اجازه تماس تیم آینه برای هماهنگی دمو را می‌دهید.</p>
 <button class="btn btn--primary" type="submit">ثبت درخواست دمو</button>
-<p role="status" hidden></p>
-</form><script>
-(function(){
- const form=document.querySelector('.demo-form');
- const button=form.querySelector('button');
- const status=form.querySelector('[role=status]');
- form.addEventListener('submit',async function(event){
-  event.preventDefault();
-  button.disabled=true;
-  status.hidden=true;
-  const body=Object.fromEntries(new FormData(form));
-  body.consent=form.elements.consent.checked;
-  try{
-   const response=await fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-   const result=await response.json();
-   if(!response.ok||!result.ok)throw new Error(result.error||'ارسال درخواست انجام نشد.');
-   form.reset();
-   status.textContent='درخواست ثبت شد. برای هماهنگی دمو با شما تماس می‌گیریم.';
-  }catch(error){
-   status.textContent=error.message||'ارسال درخواست انجام نشد. دوباره امتحان کنید.';
-  }finally{
-   status.hidden=false;
-   button.disabled=false;
-  }
+<p role="status" aria-live="polite" hidden></p>
+</form><script>(function(){
+ const form=document.querySelector('.demo-form'),btn=form.querySelector('button'),status=form.querySelector('[role=status]');
+ form.addEventListener('submit',async function(e){e.preventDefault();btn.disabled=true;status.hidden=true;
+  const body=Object.fromEntries(new FormData(form));body.consent=true;
+  try{const r=await fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'درخواست ثبت نشد');form.reset();status.textContent='درخواست ثبت شد. برای هماهنگی دمو با شما تماس می‌گیریم.';status.dataset.state='ok';}
+  catch(e){status.textContent=e.message||'خطا در ارسال درخواست';status.dataset.state='error';}
+  finally{status.hidden=false;btn.disabled=false;}
  });
-})();
-</script>`;
+})();</script>`;
 
 const premiumLandingCSS=String.raw`
 /* Ayneh Luxury Classic — scoped to the public marketing page only */
@@ -272,6 +255,22 @@ body.premium-landing{
 }
 @media(max-width:390px){.premium-landing .journey{grid-template-columns:1fr}.premium-landing .top .brand img{width:29px;height:29px}}
 @media(prefers-reduced-motion:reduce){.premium-landing .why>div{transition:none}.premium-landing *{scroll-behavior:auto}}
+.premium-landing .lead-box{background:#fff8ec;color:#312216;border:1px solid #dfc391;border-radius:20px;padding:18px;margin-top:22px;scroll-margin-top:24px;box-shadow:0 18px 35px -28px #160d07}
+.premium-landing .lead-box h2{font-family:var(--display);font-size:18px;color:#37251b;line-height:1.55}
+.premium-landing .lead-box>p{font-size:12px;color:#695340;margin:4px 0 13px;line-height:1.8}
+.premium-landing .lead-box .demo-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;background:transparent;border:0;box-shadow:none;padding:0}
+.premium-landing .lead-box .demo-form label{font-size:12px;font-weight:700;display:grid;gap:4px;color:#4e3727}
+.premium-landing .lead-box .demo-form label:first-child{grid-column:1/-1}
+.premium-landing .lead-box .demo-form input:not([type=checkbox]){min-height:46px;font-size:14px;border-radius:10px;border:1px solid #bda98e;padding:8px 10px;background:#fff}
+.premium-landing .lead-box .demo-privacy{grid-column:1/-1;font-size:11px;line-height:1.7;color:#765e45}
+.premium-landing .lead-box .demo-form button{grid-column:1/-1;min-height:48px;background:linear-gradient(135deg,#efd3a3,#cda065);color:#231910;font-weight:800}
+.premium-landing .lead-box [role=status]{grid-column:1/-1;font-size:12px;color:#205f35;background:#e9f6ec;padding:7px;border-radius:8px}
+.premium-landing .lead-box [role=status][data-state=error]{color:#972d1f;background:#fcece8}
+.premium-landing .demo-layout{grid-template-columns:1fr;text-align:center}
+.premium-landing .demo-layout .sub-l{margin:8px auto 16px}
+.premium-landing .demo-layout .btn--primary{background:#e7c58e;color:#261a0f;border-radius:999px}
+@media(max-width:760px){.premium-landing .lead-box{padding:15px}.premium-landing .lead-box .demo-form{grid-template-columns:1fr}.premium-landing .lead-box .demo-form label:first-child{grid-column:auto}}
+
 `;
 export const landingFor=o=>'<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#211914"><meta name="color-scheme" content="light"><title>'+title+'</title><meta name="description" content="'+desc+'"><meta name="robots" content="index,follow,max-image-preview:large"><link rel="canonical" href="'+o+'/"><link rel="alternate" hreflang="fa" href="'+o+'/"><link rel="alternate" hreflang="x-default" href="'+o+'/"><meta property="og:title" content="'+title+'"><meta property="og:description" content="'+desc+'"><meta property="og:type" content="website"><meta property="og:url" content="'+o+'/"><meta property="og:image" content="'+o+ogImg+'"><meta property="og:image:alt" content="لوگوی مزون آینه؛ لباس عروس را روی اندام خودت ببین"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:site_name" content="مزون آینه"><meta property="og:locale" content="fa_IR"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="'+title+'"><meta name="twitter:description" content="'+desc+'"><meta name="twitter:image" content="'+o+ogImg+'">'+jsonld(o)+'<link rel="icon" href="/favicon.ico" sizes="any"><link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest"><link rel="preload" href="/fonts/vazirmatn-arabic.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/fonts/estedad-arabic.woff2" as="font" type="font/woff2" crossorigin><link rel="preload" href="/catalog/dress/demo-after.webp" as="image"><style>'+baseCSS+css+`
 body{background:#f5eee3;color:#261c16}
@@ -320,15 +319,15 @@ main>section:not(.hero){margin-block:36px}
 +'<a class="skip" href="#main">پرش به محتوای اصلی</a>'
 +'<div class="wrap"><header class="top"><a class="brand" href="/" aria-label="مزون آینه">'+brandImg(36)+'<span>مزون آینه</span></a><nav class="top-nav" aria-label="دسترسی سریع"><a href="#product">محصول</a><a href="#why">مزایا</a><a href="#path">مسیر تجربه</a><a href="#faq">سؤالات متداول</a></nav><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a></header>'
 +'<main id="main">'
-+'<section class="hero" aria-labelledby="h1"><div class="hero__copy"><span class="eyebrow">راهکار هوشمند و تخصصی مزون‌های عروس</span><h1 class="display" id="h1">آینهٔ هوشمند؛ تجربه‌ای فراتر از انتخاب لباس عروس</h1><p class="sub-l">اجازه دهید عروس لباس‌های مزون شما را روی تصویر خودش ببیند، مدل‌های دلخواهش را مقایسه کند و برای پرو حضوری با انتخاب‌های مشخص پیش برود.</p><div class="hero__cta"><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a><a class="btn btn--ghost" href="#product">مشاهده عملکرد آینه</a></div><div class="premium-trust" aria-label="ویژگی‌های اصلی"><span>پیش‌نمایش روی تصویر واقعی مشتری</span><span>مقایسه مدل‌های منتخب</span><span>پرو حضوری هدفمندتر</span></div></div><img class="hero__photo" src="/demo/salon-setup.webp" alt="مشاور مزون و مشتری کنار آینهٔ هوشمند لباس عروس" width="1536" height="1024" fetchpriority="high"></section>'
-+'<section id="product" class="product-layout" aria-labelledby="product-title"><div><h2 class="display" id="product-title">لباس‌های خود مزون، روی تصویر مشتری</h2><p class="sub-l">آینه روی تبلت، تلویزیون یا استند مزون باز می‌شود. خط روی عکس را جابه‌جا کنید تا نمونهٔ قبل و بعد را ببینید.</p><a class="btn btn--ghost" href="/s/demo">امتحان نمونهٔ پرو مجازی</a></div>'
++'<section class="hero" aria-labelledby="h1"><div class="hero__copy"><span class="eyebrow">راهکار هوشمند و تخصصی مزون‌های عروس</span><h1 class="display" id="h1">آینهٔ هوشمند؛ تجربه‌ای فراتر از انتخاب لباس عروس</h1><p class="sub-l">اجازه دهید عروس لباس‌های مزون شما را روی تصویر خودش ببیند، مدل‌های دلخواهش را مقایسه کند و برای پرو حضوری با انتخاب‌های مشخص پیش برود.</p><div class="hero__cta"><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a><a class="btn btn--ghost" href="#product">مشاهده عملکرد آینه</a></div><div class="lead-box" id="demo-request"><h2>دموی اختصاصی آینه برای مزون شما</h2><p>مشخصات مجموعه را وارد کنید تا با شما تماس بگیریم.</p>'+demoForm+'</div></div><img class="hero__photo" src="/demo/salon-setup.webp" alt="مشاور مزون و مشتری کنار آینهٔ هوشمند لباس عروس" width="1536" height="1024" fetchpriority="high"></section>'
++'<section id="product" class="product-layout" aria-labelledby="product-title"><div><h2 class="display" id="product-title">لباس‌های خود مزون، روی تصویر مشتری</h2><p class="sub-l">آینه لباس‌های مزون شما را روی تصویر مشتری نشان می‌دهد. خط روی عکس را جابه‌جا کنید تا نمونهٔ قبل و بعد را ببینید.</p><a class="btn btn--ghost" href="/s/demo">امتحان نمونهٔ پرو مجازی</a></div>'
 +'<div class="stage"><span class="float float--a">'+ic('spark')+'چهرهٔ خودش، لباس شما</span><span class="float float--b">'+ic('heart')+'همین‌جا، بدون پرو سنگین</span><div class="dev"><div class="cmp" id="cmp"><img src="/catalog/dress/demo-before.webp" alt="عکس مشتری پیش از پرو" width="480" height="720"><div class="cmp__after"><img src="/catalog/dress/demo-after.webp" alt="همان عکس با لباس مزون" width="480" height="720" fetchpriority="high"></div><span class="cmp__line"></span><span class="cmp__grip">'+grip+'</span><span class="cmp__tag cmp__tag--b">قبل</span><span class="cmp__tag cmp__tag--a">بعد</span><input class="cmp__range" id="cmpr" type="range" min="0" max="100" value="50" dir="ltr" aria-label="مقایسهٔ قبل و بعد؛ با کلیدهای جهت خط را جابه‌جا کن"></div></div><div class="dev__stand"></div><div class="dev__base"></div><p class="cap">مقایسهٔ قبل و بعد پرو مجازی</p></div></section>'
 +'<section aria-labelledby="why"><span class="eyebrow">چرا داخل مزون جواب می‌دهد</span><h2 class="display" id="why">برای شما چه چیزی عوض می‌شود؟</h2><div class="why"><div>'+ic('dress')+'<p><b>پرو حضوری هدفمندتر</b><span>مشتری با چند لباس مورد علاقه سراغ پرو می‌رود.</span></p></div><div>'+ic('users')+'<p><b>همراهان هم شریک می‌شوند</b><span>خانواده روی صفحه می‌بینند و تصمیم سریع‌تر می‌شود.</span></p></div><div>'+ic('clock')+'<p><b>وقت مشاور آزاد می‌شود</b><span>هر لباس را لازم نیست از قفسه بیاورد و بپوشاند.</span></p></div><div>'+ic('chart')+'<p><b>بدانید چه چیزی دیده می‌شود</b><span>آمار نشان می‌دهد کدام لباس‌ها بیشتر امتحان می‌شوند.</span></p></div><div>'+ic('chat')+'<p><b>درخواست آماده</b><span>مشتری علاقه‌مند، اسم و شمارهٔ خودش را می‌گذارد.</span></p></div><div>'+ic('eye')+'<p><b>مزون شما دیده می‌شود</b><span>تجربه‌ای که مشتری برای دوستانش تعریف می‌کند.</span></p></div></div></section>'
 +'<section aria-labelledby="path"><h2 class="display" id="path">مسیر تجربهٔ مشتری با آینه</h2><ol class="journey"><li><b>۱. ثبت تصویر</b><span>مشتری یک عکس از خودش می‌گیرد.</span></li><li><b>۲. انتخاب مدل</b><span>لباس‌های مزون را مرور می‌کند.</span></li><li><b>۳. مشاهده و مقایسه</b><span>مدل‌ها را روی تصویر خودش می‌بیند.</span></li><li><b>۴. پرو حضوری</b><span>گزینه‌های منتخب را در مزون می‌پوشد.</span></li></ol></section>'
-+'<section aria-labelledby="setup"><span class="eyebrow">راه‌اندازی</span><h2 class="display" id="setup">سه قدم تا روشن شدن صفحه</h2><ol class="set"><li>فرم همین صفحه را تکمیل کنید و عکس لباس‌ها را در تلگرام بفرستید</li><li>صفحهٔ مزونتان را روی تبلت یا تلویزیون باز کنید</li><li>مشتری را کنار صفحه بنشانید؛ تمام!</li></ol></section>'
+
 +'<section aria-labelledby="priv"><span class="eyebrow">اعتماد</span><h2 class="display" id="priv">مشتری با خیال راحت عکس می‌گیرد</h2><div class="safe"><span>'+ic('trash')+'عکس بعد از ۱۵ دقیقه پاک می‌شود</span><span>'+ic('lock')+'جایی نمایش عمومی ندارد</span><span>'+ic('trash')+'خودش هم می‌تواند فوری پاک کند</span><span>'+ic('shield')+'نتیجه شبیه‌سازی است؛ پرو حضوری نهایی است</span></div></section>'
-+'<section class="demo-layout" aria-labelledby="demo-request"><div><h2 class="display" id="demo-request">دموی آینه را برای مزونتان ببینید</h2><p class="sub-l">شماره‌تان را بگذارید تا برای هماهنگی دمو با شما تماس بگیریم.</p><a class="btn btn--ghost" href="#start">شروع آزمایشی رایگان</a></div>'+demoForm+'</section>'
-+'<section id="owners" aria-labelledby="start"><h2 class="display" id="start">صفحهٔ مزونتان را بسازید</h2><p class="sub-l">رایگان شروع کنید. شمارهٔ موبایل را وارد کنید تا تیم مزون آینه برای فعال‌سازی با شما تماس بگیرد.</p><div class="landing-registration">'+landingRegistration+'</div></section>'
++'<section class="demo-layout" aria-labelledby="final-demo-title"><div><h2 class="display" id="final-demo-title">عملکرد آینه را در مزون خودتان تصور کنید</h2><p class="sub-l">برای آشنایی با تجربه آینه و پلن‌ها، درخواست دموی اختصاصی ثبت کنید.</p><a class="btn btn--primary" href="#demo-request">درخواست دموی اختصاصی</a></div></section>'
+
 +'<section aria-labelledby="faq"><h2 class="display" id="faq">سؤال‌های مزون‌دارها</h2>'+faq.map(([q,a])=>'<details><summary>'+q+'</summary><p>'+a+'</p></details>').join('')+'</section>'
-+'</main><footer><span>© مزون آینه</span><span><a href="/s/demo">نمونه</a> · <a href="#start">ثبت‌نام مدیر مزون</a> · <a href="/privacy">قوانین و حریم خصوصی</a> · <a href="'+BOT_URL+'" rel="noopener">ربات تلگرام</a></span></footer></div><script>'+js+'</script></body></html>';
++'</main><footer><span>© مزون آینه</span><span><a href="/s/demo">نمونه عملکرد</a> · <a href="#demo-request">درخواست دمو</a> · <a href="/privacy">قوانین و حریم خصوصی</a> · <a href="'+BOT_URL+'" rel="noopener">ربات تلگرام</a></span></footer></div><script>'+js+'</script></body></html>';
 export const landingHTML=landingFor('');
