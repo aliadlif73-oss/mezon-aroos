@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {landingFor} from '../worker/landing.js';
 
-test('public homepage offers demo leads instead of self-service signup', () => {
+test('public homepage offers contact requests instead of self-service signup', () => {
   const html = landingFor('https://ayneh-mezon.site');
   assert.match(html, /class="lead-box" id="demo-request"/);
   assert.match(html, /name="salon"/);
@@ -21,7 +21,7 @@ test('review annotations: CTA, media, devices, privacy and corporate footer', ()
   const head = html.match(/<header class="top">[\s\S]*?<\/header>/)?.[0] || '';
   assert.ok(head);
   assert.doesNotMatch(head, /درخواست دموی اختصاصی/);
-  assert.match(html, /href="#demo-request" data-lead-mode="trial">۳ روز آزمایشی رایگان/);
+  assert.match(html, /href="#demo-request">درخواست تماس/);
   assert.match(html, /href="\/s\/demo">مشاهده عملکرد آینه/);
   assert.match(html, /<video class="hero-film__video" autoplay muted playsinline loop/);
   assert.match(html, /\/demo\/hero-tryon\.mp4/);
@@ -34,6 +34,5 @@ test('review annotations: CTA, media, devices, privacy and corporate footer', ()
   assert.doesNotMatch(html, /class="safe"/);
   assert.match(html, /class="corporate-footer"/);
   assert.match(html, /ayneh-mezon\.site/);
-  assert.match(html, /name="chosen" type="hidden"/);
-  assert.match(html, /data-lead-mode/);
+  assert.doesNotMatch(html, /درخواست دموی اختصاصی|data-lead-mode/);
 });
