@@ -467,7 +467,7 @@ test('support: 20 messages per hour per chat, then a friendly stop without calli
 test('support prompt: real facts only (no prices), all required sections, tests-free of secrets',()=>{
  assert(!/\d[\d,٬]*\s*(تومان|ریال|دلار)/.test(SUPPORT_PROMPT),'no invented prices');
  for(const h of ['هویت و لحن','شناخت محصول','راهنمای کارهای رایج','پرسش‌های پرتکرار','مرزها','ارجاع به کارشناس','امنیت','قالب خروجی','نمونه‌های پاسخ'])assert(SUPPORT_PROMPT.includes(h),h);
- assert(SUPPORT_PROMPT.includes('۱۰ ساعت')&&SUPPORT_PROMPT.includes('۵ تصویر'));assert(!/AIza|GEMINI_API_KEY/.test(SUPPORT_PROMPT));
+ assert(SUPPORT_PROMPT.includes('۷۲ ساعت')&&SUPPORT_PROMPT.includes('۵ تصویر'));assert(!/AIza|GEMINI_API_KEY/.test(SUPPORT_PROMPT));
 });
 
 test('support: simulated conversations (set SHOW_TRANSCRIPT=1 to print)',()=>withSupport(async(env,bots,g)=>{

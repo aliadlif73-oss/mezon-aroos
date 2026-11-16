@@ -151,14 +151,16 @@ const demoForm = `<form class="demo-form" aria-label="درخواست دموی ا
 </form><script>(function(){
  const form=document.querySelector('.demo-form'),btn=form.querySelector('button'),status=form.querySelector('[role=status]');
  const leadBox=document.getElementById('demo-request');
- document.addEventListener('click',function(event){
-  const link=event.target.closest('[data-lead-mode]');if(!link)return;
-  const trial=link.dataset.leadMode==='trial';
+ function setLeadMode(trial){
   form.elements.chosen.value=trial?'درخواست آزمایش رایگان ۳روزه':'درخواست دموی اختصاصی';
   leadBox.querySelector('h2').textContent=trial?'درخواست استفاده آزمایشی ۳روزه':'دموی اختصاصی آینه برای مزون شما';
   leadBox.querySelector('p').textContent=trial?'مشخصات مزون را ثبت کنید؛ تیم آینه برای هماهنگی فعال‌سازی آزمایش با شما تماس می‌گیرد.':'مشخصات مجموعه را وارد کنید تا با شما تماس بگیریم.';
   btn.textContent=trial?'ثبت درخواست آزمایش ۳روزه':'ثبت درخواست دمو';
+ }
+ document.addEventListener('click',function(event){
+  const link=event.target.closest('[data-lead-mode]');if(link)setLeadMode(link.dataset.leadMode==='trial');
  });
+ if(new URLSearchParams(location.search).get('intent')==='trial')setLeadMode(true);
  form.addEventListener('submit',async function(e){e.preventDefault();btn.disabled=true;status.hidden=true;
   const body=Object.fromEntries(new FormData(form));body.consent=true;
   try{const r=await fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok||!j.ok)throw new Error(j.error||'درخواست ثبت نشد');form.reset();status.textContent='درخواست ثبت شد. برای هماهنگی دمو با شما تماس می‌گیریم.';status.dataset.state='ok';}
