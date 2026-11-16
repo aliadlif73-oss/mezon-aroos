@@ -7,7 +7,7 @@ import {cleanUser,checkCreds,pwHash,subLabel,checkSub} from './manager.js';
 
 // Free trial salon page: a salon owner builds it from the landing form and can use it for a short
 // time with a small image budget. Both limits are enforced here on the server, never in the page.
-export const TRIAL_HOURS=10,TRIAL_IMAGES=5;
+export const TRIAL_HOURS=72,TRIAL_IMAGES=5;
 export const BRANDS=['#B9975B','#8E3050','#5E6B3A','#2E5468'];
 const run=(db,sql,...a)=>db.prepare(sql).bind(...a).run();
 const one=(db,sql,...a)=>db.prepare(sql).bind(...a).first();
@@ -17,7 +17,7 @@ export const trialOf=(db,salonId)=>one(db,'SELECT * FROM trials WHERE salon_id=?
 export const trialLive=t=>!!t&&(!t.started_at||Date.now()<t.expires_at);
 export function trialPublic(t){if(!t)return null;return {expires_at:t.started_at?t.expires_at:null,started:!!t.started_at,hours:TRIAL_HOURS,expired:!trialLive(t),images_limit:t.images_limit,images_left:Math.max(0,t.images_limit-t.images_used),brand:t.brand||''};}
 
-// Takes `w` images from the trial's budget (a 360 clip weighs more than a photo), atomically. The 10-hour clock
+// Takes `w` images from the trial's budget (a 360 clip weighs more than a photo), atomically. The 72-hour clock
 // starts here, with the first image. Called before any paid request is created.
 export async function spendTrialImage(db,t,w=1){
  if(!t)return;
