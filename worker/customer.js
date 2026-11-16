@@ -706,7 +706,7 @@ function track(kind,meta,once){if(once){if(tracked[kind+meta])return;tracked[kin
  if(refIn&&history.replaceState){try{history.replaceState(null,'',location.pathname)}catch(e){}}
  document.title=state.pub.salon.name+' | مزون آینه';
  if(state.pub.trial)trialBar(state.pub.trial);else if(state.pub.brand)applyBrand({brand:state.pub.brand});
- if(state.pub.demo)document.body.prepend(el('div',{class:'trialbar',role:'status'},[document.createTextNode('نسخهٔ نمونهٔ مزون آینه · روزی ۳ تصویر · '),el('a',{href:'/#start',style:'color:#fff;text-decoration:underline',text:'صفحهٔ مزون خودتان را بسازید'})]));
+ if(state.pub.demo)document.body.prepend(el('div',{class:'trialbar',role:'status'},[document.createTextNode('نسخهٔ نمونهٔ مزون آینه · روزی ۳ تصویر · '),el('a',{href:'/?intent=trial#demo-request',style:'color:#fff;text-decoration:underline',text:'درخواست آزمایش ۳روزه'})]));
  // A bride who sent her photo to the bot arrives with her personal key: it opens her own session, photo already in it.
  var claim=(location.search.match(/[?&]c=([a-f0-9]{64})/)||[])[1]||'';
  if(claim&&history.replaceState){try{history.replaceState(null,'',location.pathname)}catch(e){}}
@@ -731,7 +731,7 @@ function applyBrand(t){
 function trialBar(t){
  applyBrand(t);
  var bar=el('div',{class:'trialbar',role:'status'}),fa=function(x){return String(x).replace(/\d/g,function(d){return '۰۱۲۳۴۵۶۷۸۹'[d]})};
- function paint(){if(!t.expires_at&&!t.expired){bar.textContent='نسخهٔ آزمایشی: پس از اولین تصویر، شمارش ۱۰ ساعت آغاز می‌شود.';return}var ms=t.expires_at-Date.now();if(t.expired||ms<=0){bar.textContent='مهلت صفحهٔ آزمایشی تمام شد. برای ادامه با مزون آینه تماس بگیرید.';bar.classList.add('is-over');var main=$('#main');if(main&&!$('.trial-over')){main.replaceChildren(el('div',{class:'panel fatal trial-over'},[h('h1','مهلت صفحهٔ آزمایشی تمام شد'),h('p','این صفحه ۱۰ ساعت و ۵ تصویر برای امتحان داشت. برای نسخهٔ دائمی با مزون آینه تماس بگیرید.','muted'),el('a',{class:'btn btn--primary',href:'/#start',text:'درخواست نسخهٔ دائمی'})]))}return}
+ function paint(){if(!t.expires_at&&!t.expired){bar.textContent='نسخهٔ آزمایشی: پس از اولین تصویر، شمارش ۷۲ ساعت آغاز می‌شود.';return}var ms=t.expires_at-Date.now();if(t.expired||ms<=0){bar.textContent='مهلت صفحهٔ آزمایشی تمام شد. برای ادامه با مزون آینه تماس بگیرید.';bar.classList.add('is-over');var main=$('#main');if(main&&!$('.trial-over')){main.replaceChildren(el('div',{class:'panel fatal trial-over'},[h('h1','مهلت صفحهٔ آزمایشی تمام شد'),h('p','این صفحه ۷۲ ساعت و ۵ تصویر برای امتحان داشت. برای نسخهٔ دائمی با مزون آینه تماس بگیرید.','muted'),el('a',{class:'btn btn--primary',href:'/#demo-request',text:'درخواست نسخهٔ دائمی'})]))}return}
   var m=Math.ceil(ms/60000),hh=Math.floor(m/60),mm=m%60;bar.textContent='صفحهٔ آزمایشی · '+fa(hh)+' ساعت و '+fa(mm)+' دقیقه مانده · '+fa(t.images_left)+' تصویر از '+fa(t.images_limit)}
  paint();document.body.prepend(bar);setInterval(paint,30000);
  window.__trialLeft=function(){return api('public').then(function(p){if(p.trial){t.images_left=p.trial.images_left;t.expired=p.trial.expired;paint()}}).catch(function(){})};
@@ -2256,7 +2256,7 @@ function openRequest(){
  panel.append(el('div',{class:'sheet__head'},[h('h2','فرستادن برای '+artist()),el('button',{class:'sheet__x',type:'button','aria-label':'بستن',text:'×',onclick:closeSheet})]));
  if(!state.pub.telegram){
   panel.append(notice('info',state.pub.demo?'این نسخهٔ نمونهٔ مزون آینه است و مزونی برای دریافت ندارد. نتیجه را دانلود کن. برای اینکه مشتری‌های خودت به مزون خودت درخواست بفرستند، صفحهٔ آزمایشی رایگان را بساز.':'«'+s.name+'» هنوز دریافت آنلاین را فعال نکرده. عکس نتیجه را دانلود کن و از یکی از این راه‌ها برای مزون بفرست.'));
-  if(state.pub.demo)panel.append(el('a',{class:'btn btn--primary',href:'/#start',style:'margin-top:12px',text:'صفحهٔ آزمایشی رایگان مزون من'}));
+  if(state.pub.demo)panel.append(el('a',{class:'btn btn--primary',href:'/?intent=trial#demo-request',style:'margin-top:12px',text:'درخواست آزمایش ۳روزه'}));
   var ways=el('div',{class:'about__quick',style:'margin-top:14px'});
   if(p.phone)ways.append(el('a',{class:'btn btn--primary',href:'tel:'+p.phone,html:ICO.phone+'<span>تماس با مزون</span>'}));
   if(p.telegram)ways.append(el('a',{class:'btn btn--ghost',href:p.telegram,target:'_blank',rel:'noopener noreferrer',html:ICO.send+'<span>تلگرام مزون</span>'}));
