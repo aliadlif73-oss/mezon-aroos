@@ -97,3 +97,44 @@ test('referenceLandingFor renders all 8 mockup screens cleanly with valid JS', a
   const body = await res.text();
   assert.match(body, /آینه چطور کار می‌کند؟/);
 });
+
+test('owner inquiries endpoint enforces auth, paginates 50 per page, and is wired in admin UI', async () => {
+  const { readFileSync, readdirSync } = await import('node:fs');
+  const { database, memoryBucket } = await import('../scripts/local-adapter.mjs');
+  const { appHTML } = await import('../worker/ui.js');
+
+  assert.match(appHTML, /درخواست‌های صفحهٔ اصلی/);
+  assert.match(appHTML, /\/api\/owner\/inquiries/);
+
+  const DB = database();
+  for (const f of readdirSync(new URL('../drizzle/', import.meta.url)).filter((x) => x.endsWith('.sql')).sort()) {
+    DB.sql.exec(readFileSync(new URL('../drizzle/' + f, import.meta.url), 'utf8'));
+  }
+  const env = { DB, BUCKET: memoryBucket(), OWNER_EMAIL: 'owner@test', TRUST_PLATFORM_IDENTITY: 'true' };
+  const ownerHdr = { 'oai-authenticated-user-id': 'owner-a', 'oai-authenticated-user-email': 'owner@test' };
+
+  for (let i = 0; i < 52; i++) {
+    DB.sql
+      .prepare('INSERT INTO inquiries(id,name,salon,city,phone,note,chosen,created_at) VALUES(?,?,?,?,?,?,?,?)')
+      .run('inq-' + String(i).padStart(2, '0'), 'نام ' + i, 'مزون ' + i, 'تهران', '+989120000000', '', 'آزمایشی', 1700000000000 + i);
+  }
+
+  assert.equal((await app.fetch(new Request('https://test.example/api/owner/inquiries'), env)).status, 401);
+
+  const p1Res = await app.fetch(new Request('https://test.example/api/owner/inquiries', { headers: ownerHdr }), env);
+  assert.equal(p1Res.status, 200);
+  const p1 = await p1Res.json();
+  assert.equal(p1.inquiries.length, 50);
+  assert.equal(p1.more, true);
+  assert.equal(p1.inquiries[0].id, 'inq-51');
+
+  const last = p1.inquiries.at(-1);
+  const p2Res = await app.fetch(
+    new Request(`https://test.example/api/owner/inquiries?before=${last.created_at}&id=${encodeURIComponent(last.id)}`, { headers: ownerHdr }),
+    env
+  );
+  assert.equal(p2Res.status, 200);
+  const p2 = await p2Res.json();
+  assert.deepEqual(p2.inquiries.map((x) => x.id), ['inq-01', 'inq-00']);
+  assert.equal(p2.more, false);
+});
