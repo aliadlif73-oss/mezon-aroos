@@ -215,6 +215,16 @@ export async function api(req,env){const u=new URL(req.url),path=u.pathname;must
   await notifyOwner(env,{kind:'inquiry',level:'good',text:'درخواست معرفی مزون آینه از «'+salon+'»'+(city?' ('+city+')':'')+' ثبت شد',detail:'👤 '+name+'\n📞 '+tel+(chosen?'\n✨ انتخاب در مزون آینه: '+chosen:'')+(note?'\n📝 '+note:'')});
   return J({ok:true});
  }
+ if(path==='/api/owner/inquiries'&&req.method==='GET'){
+  await owner(req,env);
+  const before=u.searchParams.get('before'), id=u.searchParams.get('id');
+  const columns='SELECT id,name,salon,city,phone,note,chosen,created_at FROM inquiries';
+  const order=' ORDER BY created_at DESC,id DESC LIMIT 51';
+  const rows=before&&id
+   ? await all(db,columns+' WHERE (created_at,id)<(?,?)'+order,Number(before),id)
+   : await all(db,columns+order);
+  return J({inquiries:rows.slice(0,50),more:rows.length>50});
+ }
  if(path==='/api/trial'&&req.method==='POST'){
   await limited(db,'trial:'+clientIp(req),12,'از این شبکه چند صفحهٔ آزمایشی ساخته شده؛ فردا دوباره امتحان کنید');
   const b=await req.json().catch(()=>({}));
