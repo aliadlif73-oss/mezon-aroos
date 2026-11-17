@@ -558,6 +558,40 @@ function tabsView(defs,key){
  pick(start);return el('div',{},[bar,box]);
 }
 
+function inquiriesCard(){
+ var list=el('div',{class:'stack'}),status=el('p',{class:'muted',role:'status'}),cursor='';
+ var more=el('button',{class:'btn btn--ghost btn--sm',type:'button',text:'درخواست‌های قدیمی‌تر',onclick:load});
+ more.hidden=true;
+ function value(label,text){return el('div',{},[h('strong',label+' '),h('span',text||'—')])}
+ async function load(){
+  more.disabled=true;
+  status.textContent='در حال دریافت درخواست‌ها…';
+  try{
+   var d=await api('/api/owner/inquiries'+cursor);
+   d.inquiries.forEach(function(x){
+    list.append(el('article',{class:'card stack',style:'overflow-wrap:anywhere'},[
+     h('h3',x.salon),
+     el('time',{datetime:new Date(x.created_at).toISOString(),class:'muted',text:fmt(x.created_at)+' (به وقت تهران)'}),
+     value('نام',x.name),value('شهر',x.city),
+     el('div',{},[h('strong','شماره تماس '),el('a',{href:'tel:'+x.phone,dir:'ltr',text:x.phone})]),
+     value('انتخاب',x.chosen),value('توضیحات',x.note)
+    ]));
+   });
+   var last=d.inquiries.at(-1);
+   if(last)cursor='?before='+last.created_at+'&id='+encodeURIComponent(last.id);
+   status.textContent=list.childElementCount?'':'هنوز درخواستی از صفحهٔ اصلی ثبت نشده است.';
+   more.textContent='درخواست‌های قدیمی‌تر';
+   more.hidden=!d.more;
+  }catch(e){
+   status.textContent='دریافت درخواست‌ها انجام نشد.';
+   more.textContent='تلاش دوباره';
+   more.hidden=false;
+  }finally{more.disabled=false}
+ }
+ load();
+ return el('section',{class:'card stack'},[h('h2','درخواست‌های صفحهٔ اصلی'),status,list,more]);
+}
+
 function home(){return api('/api/owner').then(function(d){
  var head=el('div',{class:'page-head'},[el('div',{},[h('h1','داشبورد'),h('p','مشتری‌ها چطور از صفحه‌ها استفاده می‌کنند و مزون‌ها چقدر جواب می‌دهند. با تب‌های زیر بین مزون‌ها، آمار و تنظیمات جابه‌جا شوید.')])]);
  var list=el('div',{class:'salons'});
@@ -569,7 +603,7 @@ function home(){return api('/api/owner').then(function(d){
   var prev=el('span',{class:'hint slug-preview'});si.closest('.field').append(prev);
   function show(){var v=si.value;prev.textContent=v?'صفحهٔ مشتری: '+location.host+'/s/'+v:''}
   si.addEventListener('input',function(){var c=si.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');if(c!==si.value)si.value=c;show()});show()})();
- $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]]],'admin')) ;
+ $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
 })}
 function smsCard(sms){
  var st=function(ok,on,off){return el('li',{class:ok?'on':'off'},[el('span',{class:'dot',html:ok?IC.check:IC.dash}),h('span',ok?on:off)])};
