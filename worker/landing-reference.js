@@ -3,7 +3,7 @@
 export const referenceLandingFor = (origin) => {
   const title = 'آینه | پرو مجازی لباس عروس با هوش مصنوعی';
   const description = 'لباس‌های مزون را پیش از پرو، روی تصویر واقعی خود ببینید و انتخاب‌ها را مقایسه کنید.';
-  const page = String.raw\`<!doctype html>
+  const page = String.raw`<!doctype html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
@@ -104,6 +104,6 @@ const form=document.getElementById('lead-form'),status=document.getElementById('
 form.addEventListener('submit',async e=>{e.preventDefault();if(!form.reportValidity())return;btn.disabled=true;status.hidden=true;const data=Object.fromEntries(new FormData(form));data.consent=true;try{const response=await fetch('/api/inquiry',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await response.json();if(!response.ok||!result.ok)throw new Error(result.error||'درخواست ثبت نشد');form.reset();status.className='lead-status ok';status.textContent='✓ درخواست شما ثبت شد! کارشناسان آینه برای هماهنگی با شما تماس می‌گیرند.';}catch(err){status.className='lead-status error';status.textContent=err.message||'خطا در ثبت درخواست';}finally{status.hidden=false;btn.disabled=false}});
 })();
 </script>
-</body></html>\`;
+</body></html>`;
   return page.replaceAll('__ORIGIN__', String(origin).replace(/\/$/, ''));
 };
