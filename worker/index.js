@@ -26,9 +26,10 @@ const notFound='<!doctype html><html lang="fa" dir="rtl"><head><meta charset="ut
 const attr=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 async function salonPage(u,env){
  const slug=u.pathname.split('/')[2];let salon=null;
+ const themeIfDemo=html=>slug==='demo'?html.replace('<body>','<body class="is-public-demo">'):html;
  let failed=!env.DB;try{salon=env.DB?await env.DB.prepare('SELECT slug,name,profile FROM salons WHERE slug=?').bind(slug).first():null}catch{failed=true}
  // A database hiccup still serves the page (it shows its own error); only a missing salon is a 404.
- if(!salon)return failed||slug==='demo'?customerHTML:null;
+ if(!salon)return failed||slug==='demo'?themeIfDemo(customerHTML):null;
  let p={};try{p=JSON.parse(salon.profile||'{}')}catch{}
  const origin=env.APP_ORIGIN||u.origin,url=origin+'/s/'+salon.slug;
  const title=salon.name+' | لباس عروس را روی اندام خودت ببین';
@@ -37,7 +38,7 @@ async function salonPage(u,env){
  const tags='<title>'+attr(title)+'</title>\n<meta name="description" content="'+attr(desc)+'">\n<meta property="og:title" content="'+attr(title)+'">\n<meta property="og:description" content="'+attr(desc)+'">\n<meta property="og:type" content="website">\n<meta property="og:url" content="'+attr(url)+'">\n<meta property="og:site_name" content="مزون آینه">\n<meta property="og:locale" content="fa_IR">\n'+(img?'<meta property="og:image" content="'+attr(img)+'">\n<meta property="og:image:alt" content="'+attr(salon.name)+'">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="'+attr(img)+'">\n':'<meta property="og:image" content="'+attr(origin)+'/og.jpg">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="'+attr(origin)+'/og.jpg">\n')+'<link rel="canonical" href="'+attr(url)+'">';
  const pre=p.cover?'<link rel="preload" as="image" href="/api/s/'+attr(salon.slug)+'/media/'+attr(p.cover)+'">\n':'';
  const skelName='<div class="hero__name" style="height:auto">'+attr(salon.name)+'</div>';
- return customerHTML.replace('<div class="skel" style="width:70%;height:38px"></div>',()=>skelName).replace(/<meta name="description"[^>]*>\n?/,'').replace(/<meta property="og:[a-z:]+"[^>]*>\n?/g,'').replace(/<title>[^<]*<\/title>/,()=>pre+tags);
+ return themeIfDemo(customerHTML.replace('<div class="skel" style="width:70%;height:38px"></div>',()=>skelName).replace(/<meta name="description"[^>]*>\n?/,'').replace(/<meta property="og:[a-z:]+"[^>]*>\n?/g,'').replace(/<title>[^<]*<\/title>/,()=>pre+tags));
 }
 // Registers the bot webhook once per (origin, secret, token) so a fresh deploy or rotated secret
 // needs no manual step. Failures are swallowed; the admin button and /api/internal/webhook still work.

@@ -5,6 +5,7 @@ import {SCENE_JS} from './scene.js';
 const lineJSON=(line,list)=>({styles:list.map(x=>[x[0],x[1],x[2]]),filters:LINE_FILTERS[line]});
 const LINES_JSON=JSON.stringify({label:LINE_LABEL,photo:{dress:LINE_PHOTO.dress},dress:lineJSON('dress',DRESS_STYLES)});
 import {baseCSS,markSVG,illos,MZ_D} from './design.js';
+import {freshDemoCSS} from './ayneh-theme.js';
 
 const customerCSS=String.raw`
 .hd{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto auto;align-content:center;justify-items:center;gap:22px;margin:12px 0 6px;min-height:clamp(300px,50vh,460px);padding:34px 20px;border-radius:var(--r-lg);overflow:hidden;border:1px solid rgba(201,165,92,.45);background:radial-gradient(70% 120% at 85% 0,rgba(255,255,255,.95),transparent 62%),radial-gradient(60% 100% at 10% 100%,rgba(232,217,176,.55),transparent 70%),linear-gradient(135deg,#f7f3ec,#e9efec);box-shadow:var(--lift)}
@@ -2870,5 +2871,5 @@ export const customerHTML=String.raw`<!doctype html><html lang="fa" dir="rtl"><h
 <dialog class="sheet" id="sheet" aria-label="پنجره"></dialog>
 <script>__JS__</script>
 </body></html>`
- .replace('__CSS__',()=>baseCSS+customerCSS)
+ .replace('__CSS__',()=>baseCSS+customerCSS+freshDemoCSS)
  .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
