@@ -1,0 +1,7 @@
+{
+  "name": "Mezon Aroos (مزون آینه)",
+  "description": "Wedding-dress virtual fitting for boutiques (Persian, RTL).",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
