@@ -6,6 +6,7 @@ export const referenceLandingFor = (origin) => {
   const description = 'پلتفرم هوشمند پرو مجازی لباس عروس ویژه مزون‌ها؛ پیش از پرو حضوری، لباس‌های مزون را به‌صورت واقعی روی تصویر عروس نشان دهید تا سریع‌تر مقایسه کند و مطمئن‌تر سفارش بدهد.';
 
   const brandLogoSrc = '/assets/aistudio/photo_2026-11-17_06-02-29_bc384e6f.jpg';
+  const demoVideoSrc = '/assets/aistudio/Untitled-project__3__001c1c64.mp4';
 
   const page = String.raw`<!doctype html>
 <html lang="fa" dir="rtl">
@@ -327,6 +328,137 @@ img{display:block;max-width:100%}
   opacity:0;margin:0;cursor:ew-resize;z-index:5;
 }
 .compare-card:focus-within{outline:3px solid var(--green);outline-offset:3px}
+
+/* Hero Demo Video Showcase */
+.hero-video-section{
+  margin-top:24px;
+}
+.video-showcase{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1.08fr) minmax(0,320px);
+  gap:28px;
+  align-items:center;
+  padding:26px 28px;
+  border-radius:26px;
+  background:linear-gradient(135deg,#ffffff 0%,#fbf7ef 100%);
+  border:1px solid #e6dfd3;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.video-showcase::before{
+  content:"";
+  position:absolute;inset-inline-start:-70px;top:-70px;
+  width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(213,180,98,.16) 0%,transparent 72%);
+  pointer-events:none;
+}
+.video-copy{
+  position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:flex-start;gap:12px;
+}
+.video-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:5px 12px;border-radius:10px;
+  background:#f4efe1;border:1px solid rgba(196,154,69,.38);
+  color:#0c5424;font-size:12.5px;font-weight:800;
+}
+.video-eyebrow__dot{
+  width:7px;height:7px;border-radius:50%;background:var(--green);
+  box-shadow:0 0 0 3px rgba(15,122,52,.18);flex-shrink:0;
+}
+.video-copy h2{
+  font-size:clamp(20px,2.4vw,27px);
+  font-weight:900;color:var(--ink);line-height:1.38;
+}
+.video-copy__desc{
+  font-size:14.5px;line-height:1.85;color:var(--ink-2);max-width:46ch;
+}
+.video-points{
+  list-style:none;margin:2px 0 0;padding:0;display:grid;gap:8px;
+}
+.video-points li{
+  display:flex;align-items:center;gap:9px;
+  font-size:13.5px;font-weight:700;color:var(--ink);
+}
+.video-points svg{
+  width:18px;height:18px;color:var(--green);flex-shrink:0;
+}
+.video-copy__cta{
+  margin-top:4px;
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:13.5px;font-weight:900;color:var(--green);
+  padding:6px 0;
+  border-bottom:1.5px solid rgba(15,122,52,.28);
+  transition:border-color .16s var(--ease),gap .16s var(--ease);
+}
+.video-copy__cta:hover{border-color:var(--green);gap:11px}
+
+.video-player-col{
+  position:relative;z-index:1;
+  display:flex;justify-content:center;
+}
+.video-frame-shell{
+  width:min(100%,292px);
+  padding:10px 10px 12px;
+  border-radius:28px;
+  background:linear-gradient(155deg,#133b27 0%,#082014 100%);
+  border:2px solid #d7b665;
+  box-shadow:0 24px 44px -18px rgba(10,44,24,.48),inset 0 1px 0 rgba(255,243,200,.4);
+}
+.video-frame-bezel{
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  margin-bottom:8px;
+}
+.video-frame-bezel__bar{
+  width:38px;height:4px;border-radius:99px;
+  background:linear-gradient(90deg,rgba(215,182,101,.35),rgba(247,223,135,.85),rgba(215,182,101,.35));
+}
+.video-frame-bezel__cam{
+  width:6px;height:6px;border-radius:50%;
+  background:#2d5b42;border:1px solid rgba(215,182,101,.55);
+}
+.video-frame-viewport{
+  position:relative;
+  aspect-ratio:608/1080;
+  width:100%;
+  border-radius:20px;
+  overflow:hidden;
+  background:#0c1d14;
+  border:1px solid rgba(215,182,101,.32);
+}
+.video-frame-viewport video{
+  display:block;width:100%;height:100%;object-fit:cover;background:#0c1d14;
+}
+.video-play-overlay[hidden]{display:none}
+.video-play-overlay{
+  position:absolute;inset:0;z-index:2;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  border:0;width:100%;height:100%;padding:16px;
+  background:linear-gradient(180deg,rgba(9,32,20,.14) 0%,rgba(9,32,20,.32) 55%,rgba(9,32,20,.72) 100%);
+  color:#fff;text-align:center;
+  transition:background .2s var(--ease);
+}
+.video-play-overlay:hover{
+  background:linear-gradient(180deg,rgba(9,32,20,.2) 0%,rgba(9,32,20,.38) 55%,rgba(9,32,20,.78) 100%);
+}
+.video-play-ring{
+  width:68px;height:68px;border-radius:50%;
+  display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(24,142,67,.94),rgba(10,82,34,.96));
+  border:2px solid #f2d37a;
+  box-shadow:0 14px 28px -8px rgba(0,0,0,.55),0 0 0 6px rgba(242,211,122,.18);
+  transition:transform .2s var(--ease);
+}
+.video-play-overlay:hover .video-play-ring{transform:scale(1.06)}
+.video-play-ring svg{width:26px;height:26px;margin-inline-start:3px;fill:#fff}
+.video-play-caption{
+  padding:6px 14px;border-radius:10px;
+  background:rgba(8,32,20,.78);
+  border:1px solid rgba(242,211,122,.45);
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  font-size:13px;font-weight:800;color:#fff;white-space:nowrap;
+}
 
 /* Devices Showcase Card */
 .devices-panel{
@@ -705,6 +837,18 @@ img{display:block;max-width:100%}
   .compare-tag--before{left:8px}.compare-tag--after{right:8px}
   .btn-hero-primary{min-height:52px;font-size:clamp(14.5px,4vw,16.5px);padding:8px 16px}
 
+  .hero-video-section{margin-top:16px}
+  .video-showcase{
+    grid-template-columns:1fr;gap:16px;padding:18px 15px 20px;border-radius:22px;
+  }
+  .video-copy{align-items:center;text-align:center;gap:8px}
+  .video-copy__desc{font-size:13px;line-height:1.75}
+  .video-points,.video-copy__cta{display:none}
+  .video-frame-shell{width:min(100%,284px);padding:9px 9px 11px;border-radius:25px}
+  .video-frame-viewport{border-radius:18px}
+  .video-play-ring{width:60px;height:60px}
+  .video-play-ring svg{width:23px;height:23px}
+
   .devices-panel{padding:18px 14px 18px;border-radius:20px;margin-top:18px}
   .devices-panel__head{font-size:13px;gap:8px;margin-bottom:14px}
   .devices-grid{gap:18px 12px}
@@ -856,6 +1000,58 @@ img{display:block;max-width:100%}
           </span>
         </a>
       </div>
+
+      <!-- Framed Demo Video Showcase directly below the 3-day trial CTA -->
+      <section class="hero-video-section" id="app-video" aria-label="ویدیو معرفی عملکرد آینه در مزون">
+        <div class="video-showcase">
+          <div class="video-copy">
+            <div class="video-eyebrow">
+              <span class="video-eyebrow__dot" aria-hidden="true"></span>
+              <span>ویدیو واقعی داخل مزون • <b class="nums">۱:۴۶</b></span>
+            </div>
+            <h2>آینه را در فضای واقعی مزون ببینید</h2>
+            <p class="video-copy__desc">
+              از لحظه اسکن کد توسط عروس تا مقایسه مدل‌های مزون روی کیوسک و انتخاب مطمئن برای پرو حضوری؛ ببینید آینه چطور روند مشاوره و فروش مزون شما را متحول می‌کند.
+            </p>
+            <ul class="video-points">
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>اسکن کد با گوشی عروس، بدون نیاز به نصب برنامه</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>مقایسه قبل و بعد روی تصویر واقعی خود مشتری</span>
+              </li>
+              <li>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                <span>پرو حضوری هدفمند و تصمیم‌گیری سریع‌تر برای سفارش</span>
+              </li>
+            </ul>
+            <a class="video-copy__cta" href="#request" data-select-trial>
+              <span>درخواست فعال‌سازی نسخه آزمایشی ۳ روزه</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+            </a>
+          </div>
+
+          <div class="video-player-col">
+            <div class="video-frame-shell">
+              <div class="video-frame-bezel" aria-hidden="true">
+                <span class="video-frame-bezel__bar"></span>
+                <span class="video-frame-bezel__cam"></span>
+              </div>
+              <div class="video-frame-viewport">
+                <video id="app-demo-video" src="${demoVideoSrc}#t=0.5" preload="metadata" playsinline aria-label="ویدیو واقعی تجربه استفاده از آینه در مزون عروس"></video>
+                <button class="video-play-overlay" id="video-play-btn" type="button" aria-label="پخش ویدیو عملکرد آینه در مزون">
+                  <span class="video-play-ring" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M8 5.5v13l11-6.5-11-6.5z"/></svg>
+                  </span>
+                  <span class="video-play-caption">پخش ویدیو معرفی • <span class="nums">۱:۴۶</span></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <!-- Devices Showcase -->
       <div class="devices-panel" id="devices">
@@ -1297,6 +1493,23 @@ img{display:block;max-width:100%}
     window.addEventListener('pointermove', (e) => { if (dragging) move(e); });
     window.addEventListener('pointerup', () => { dragging = false; });
     window.addEventListener('pointercancel', () => { dragging = false; });
+  }
+
+  // 1b. Demo Video Overlay Play Trigger
+  const demoVideo = document.getElementById('app-demo-video');
+  const videoPlayBtn = document.getElementById('video-play-btn');
+  if (demoVideo && videoPlayBtn) {
+    const startPlayback = () => {
+      videoPlayBtn.hidden = true;
+      demoVideo.controls = true;
+      const p = demoVideo.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    };
+    videoPlayBtn.addEventListener('click', startPlayback);
+    demoVideo.addEventListener('play', () => {
+      videoPlayBtn.hidden = true;
+      demoVideo.controls = true;
+    });
   }
 
   // 2. Mobile Navigation Drawer

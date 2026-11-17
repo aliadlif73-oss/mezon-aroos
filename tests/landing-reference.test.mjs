@@ -46,6 +46,15 @@ test('referenceLandingFor renders all 8 mockup screens cleanly with valid JS', a
   assert.doesNotMatch(html, /مشاهده عملکرد آینه/);
   assert.doesNotMatch(html, /رضایت مزون/);
 
+  // Framed demo video directly below "۳ روز نسخه آزمایشی رایگان" CTA and before #devices
+  const trialIdx = html.lastIndexOf('۳ روز نسخه آزمایشی رایگان');
+  const videoIdx = html.indexOf('id="app-demo-video"');
+  const devicesIdx = html.indexOf('id="devices"');
+  assert.ok(trialIdx > -1 && videoIdx > trialIdx && devicesIdx > videoIdx, 'demo video appears after trial CTA and before devices');
+  assert.match(html, /<video id="app-demo-video" src="\/assets\/aistudio\/Untitled-project__3__001c1c64\.mp4/);
+  assert.match(html, /id="video-play-btn"/);
+  assert.match(html, /\.video-frame-shell/);
+
   // Benefits (Screen 2)
   assert.match(html, /چرا مزون‌ها(?:<br>|\s)*آینه را انتخاب می‌کنند؟/);
   for (const b of ['افزایش فروش', 'کاهش هزینه و زمان', 'رضایت بیشتر مشتری', 'پوشش کامل مدل‌ها']) {
