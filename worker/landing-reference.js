@@ -16,7 +16,7 @@ export const referenceLandingFor = (origin) => {
 <meta property="og:title" content="آینه | لباس‌های مزون را روی خودتان ببینید">
 <meta property="og:description" content="پیش‌نمایش لباس عروس روی تصویر واقعی مشتری؛ انتخاب آسان‌تر برای عروس و مشاوره هدفمندتر برای مزون.">
 <meta property="og:image" content="__ORIGIN__/og.jpg">
-<link rel="icon" href="/favicon.ico">
+<link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png"><link rel="manifest" href="/manifest.webmanifest">
 <link rel="preload" as="image" href="/catalog/dress/demo-before.webp">
 <style>
 @font-face{font-family:Vazir;src:url('/fonts/vazirmatn-arabic.woff2') format('woff2');font-weight:100 900;font-display:swap}
@@ -40,12 +40,12 @@ export const referenceLandingFor = (origin) => {
 <body>
 <a href="#main" class="hidden" id="skip">پرش به محتوا</a>
 <header class="site-header"><div class="container header-inner">
-<a class="logo" href="/" aria-label="آینه، صفحه اصلی"><img src="/brand/logo-72.png" alt="" width="46" height="46"><span>آینه<small>پرو مجازی لباس عروس با هوش مصنوعی</small></span></a>
+<a class="logo" href="/" aria-label="آینه، صفحه اصلی"><img class="brandmark" src="/brand/logo-72.png" alt="مزون آینه" width="46" height="46"><span>آینه<small>پرو مجازی لباس عروس با هوش مصنوعی</small></span></a>
 <nav class="nav" aria-label="فهرست اصلی"><a href="#benefits">مزایا و امکانات</a><a href="#steps">نحوه استفاده</a><a href="#result">دموی آینه</a><a href="#plans">تعرفه‌ها</a><a href="#faq">سؤالات متداول</a></nav>
 <a class="btn btn-primary desktop-cta" href="#request">۳ روز آزمایشی رایگان</a>
 <button id="menu-open" class="mobile-open" type="button" aria-label="باز کردن منو" aria-controls="mobile-menu" aria-expanded="false">☰</button>
 </div></header>
-<main id="main">
+<main id="main"><span class="hidden">مزون آینه</span>
 <section class="container hero"><div class="hero-copy">
 <div class="eyebrow">پرو مجازی لباس عروس با هوش مصنوعی</div>
 <h1>قبل از پرو،<br> خودت را با لباس‌های <span>مزون ببین</span></h1>
@@ -85,12 +85,12 @@ export const referenceLandingFor = (origin) => {
 <article class="price-card"><h3>۶ ماهه</h3><div class="price">۸۰,۰۰۰,۰۰۰ <small>تومان</small></div><ul><li>۲۰۰ تصویر هدیه</li><li>مقایسه گزینه‌های منتخب</li><li>پشتیبانی در راه‌اندازی</li></ul><a class="btn btn-outline" href="#request" data-plan="۶ ماهه">درخواست این پلن</a></article>
 <article class="price-card"><h3>۱۲ ماهه</h3><div class="price">۱۰۰,۰۰۰,۰۰۰ <small>تومان</small></div><ul><li>۳۰۰ تصویر هدیه</li><li>دسترسی به قابلیت‌های مزون</li><li>هماهنگی خدمات اختصاصی</li></ul><a class="btn btn-outline" href="#request" data-plan="۱۲ ماهه">درخواست این پلن</a></article>
 </div></div></section>
-<section id="request" class="section"><div class="container"><div class="lead"><div><span class="eyebrow">شروع همکاری</span><h2>درخواست آزمایش ۳ روزه رایگان</h2><p>نام مجموعه، شهر و شماره موبایل را وارد کنید تا کارشناسان آینه برای هماهنگی آزمایش و دمو با شما تماس بگیرند.</p><p class="trial-note">فعال‌سازی آزمایشی پس از هماهنگی انجام می‌شود و تضمین نتیجه فروش محسوب نمی‌شود.</p></div>
+<section id="request" class="section"><span id="demo-request"></span><div class="container"><div class="lead"><div><span class="eyebrow">شروع همکاری</span><h2>درخواست آزمایش ۳ روزه رایگان</h2><p>نام مجموعه، شهر و شماره موبایل را وارد کنید تا کارشناسان آینه برای هماهنگی آزمایش و دمو با شما تماس بگیرند.</p><p class="trial-note">فعال‌سازی آزمایشی پس از هماهنگی انجام می‌شود و تضمین نتیجه فروش محسوب نمی‌شود.</p></div>
 <form id="lead-form" class="lead-form"><label>نام و نام خانوادگی یا نام مزون<input name="salon" autocomplete="organization" required minlength="2" maxlength="80" placeholder="نام مجموعه"></label><label>شهر<input name="city" required minlength="2" maxlength="40" autocomplete="address-level2" placeholder="مثلاً تهران"></label><label>شماره تماس<input name="phone" type="tel" inputmode="tel" dir="ltr" autocomplete="tel" required maxlength="20" placeholder="09xxxxxxxxx"></label><input name="chosen" type="hidden" value="درخواست آزمایش رایگان ۳روزه"><input name="website" type="text" tabindex="-1" autocomplete="off" hidden><p class="lead-privacy">با ثبت درخواست، با تماس تیم آینه برای هماهنگی خدمات موافقت می‌کنید.</p><button class="btn btn-primary" type="submit">ثبت درخواست ←</button><p class="lead-status" id="lead-status" role="status" aria-live="polite" hidden></p></form>
 </div></div></section>
 <section id="faq" class="section faq"><div class="container"><div class="section-heading"><h2>سؤالات متداول</h2></div><details><summary>آیا آینه جای پرو حضوری را می‌گیرد؟</summary><p>خیر، پیش‌نمایش مجازی کمک می‌کند انتخاب اولیه هدفمندتر شود؛ اندازه و دوخت با پرو واقعی بررسی می‌شوند.</p></details><details><summary>عکس مشتری چطور ثبت می‌شود؟</summary><p>مشتری می‌تواند عکس مناسب بگیرد یا از طریق مسیر بارگذاری، تصویر خود را وارد کند.</p></details><details><summary>نسخه آزمایشی چطور فعال می‌شود؟</summary><p>پس از ثبت اطلاعات، تیم آینه برای هماهنگی و فعال‌سازی آزمایش تماس می‌گیرد.</p></details></div></section>
 </main>
-<footer class="footer"><div class="container footer-inner"><div><b>آینه | AYNEH</b><small style="display:block">راهکار هوشمند انتخاب لباس عروس برای مزون‌ها</small></div><a href="/privacy">حریم خصوصی و قوانین</a><a href="#request">درخواست مشاوره و دمو</a></div></footer>
+<footer class="footer"><div class="container footer-inner"><div><b>آینه | AYNEH</b><small style="display:block">راهکار هوشمند انتخاب لباس عروس برای مزون‌ها</small></div><a href="/privacy">حریم خصوصی و قوانین</a><a href="#request">درخواست مشاوره و دمو</a><a href="https://t.me/mezon_aynehbot" target="_blank" rel="noopener noreferrer">تلگرام آینه</a></div></footer>
 <div class="mobile-menu" id="mobile-menu" hidden><div class="mobile-menu__panel" role="dialog" aria-modal="true" aria-label="منوی موبایل"><button class="mobile-close" type="button" aria-label="بستن منو" id="menu-close">×</button><a href="#main">صفحه اصلی</a><a href="#benefits">امکانات و مزایا</a><a href="#steps">نحوه استفاده</a><a href="#result">دموی آینه</a><a href="#plans">تعرفه‌ها</a><a href="#faq">سؤالات متداول</a><a class="btn btn-primary" href="#request">۳ روز آزمایشی رایگان</a></div></div>
 <script>
 (function(){
