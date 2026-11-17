@@ -160,3 +160,49 @@ if(new URLSearchParams(location.search).get('intent')==='trial')mode('trial');
 document.addEventListener('focusin',function(e){if(e.target.closest('.demo-form'))document.body.classList.add('form-focusing')});
 document.addEventListener('focusout',function(e){if(e.target.closest('.demo-form'))document.body.classList.remove('form-focusing')});
 })();`;
+
+export const freshDemoCSS=String.raw`
+/* Scoped to /s/demo only. Existing branded salon pages remain unchanged. */
+body.is-public-demo{--accent:#0d8750;--accent-ink:#0b613c;--accent-soft:#e7f5eb;--accent-ring:rgba(7,133,74,.27);--ink:#233b2e;--ink-2:#637367;--muted:#7a887e;--surface:#fff;--surface-2:#f7faf5;--glass:#faf8f4;--glass-2:#f1ece6;--line:#e3e8df;--line-2:#e6ebe4;--lift:0 19px 42px -34px rgba(24,59,37,.35);background:linear-gradient(145deg,#fffefa,#faf8f5 45%,#f1f7ef);color:#283b2d}
+.is-public-demo .hero{padding:13px 0 22px}
+.is-public-demo .hero__bar{background:#fff;border:1px solid #e9ede6;border-radius:18px;padding:10px 15px;box-shadow:0 10px 27px -27px #264d32}
+.is-public-demo .hd{background:linear-gradient(135deg,#fff9f4,#eaf6ec);border:1px solid #dfece0;border-radius:26px;box-shadow:0 23px 52px -45px #2a6e42}
+.is-public-demo .hd::before{border:1px solid rgba(8,134,72,.16)}
+.is-public-demo .hd::after{background:none}
+.is-public-demo .hd__logo{outline-color:#94cba6}
+.is-public-demo .hd__name{color:#1c5734}
+.is-public-demo .hero__name{color:#1c5133}
+.is-public-demo .cover{border-radius:22px;background:#ebebe3}
+.is-public-demo .cover__glow{background:radial-gradient(circle at 90% 12%,#fff,transparent 64%),linear-gradient(145deg,#e7f5ea,#c6e6d4)}
+.is-public-demo .cover__logo{border-color:#fff}
+.is-public-demo .hchip{border-color:#dde8e0;color:#38674a;background:#fff}
+.is-public-demo .hchip__ico{color:#07874e}
+.is-public-demo .steps{background:rgba(255,255,255,.9);border-bottom:1px solid #dbeadd}
+.is-public-demo .steps__item.is-active .steps__num{background:#0d844b;border-color:#0d844b}
+.is-public-demo .steps__item.is-active::after,.is-public-demo .steps__item.is-done::after{background:#15924f}
+.is-public-demo .flow,.is-public-demo .panel,.is-public-demo .side>div,.is-public-demo .side .card{background:#fff;border-color:#e0eadf;box-shadow:0 19px 41px -38px #27563a;border-radius:23px}
+.is-public-demo .flow__title{color:#174e2e}
+.is-public-demo .flow__sub{color:#6a796f}
+.is-public-demo .btn--primary,.is-public-demo .flow__nav .btn--primary,.is-public-demo .dock .btn--primary{background:linear-gradient(135deg,#13a155,#077a44);border-color:#0c8248;color:white;border-radius:14px;box-shadow:0 12px 19px -17px #195f37}
+.is-public-demo .btn--primary:hover{background:#086c40}
+.is-public-demo .btn--ghost{color:#0d673f;border-color:#badfc7;background:#f4faf5;border-radius:13px}
+.is-public-demo .upload__in{background:linear-gradient(155deg,#f9fdf8,#e8f6ec);border-radius:18px}
+.is-public-demo .upload:hover .upload__in{background:linear-gradient(155deg,#fff,#dcf0e1)}
+.is-public-demo .upload__icon{color:#108e51}
+.is-public-demo .mirror__glass{background:#edf0e9}
+.is-public-demo .icon-btn{background:#f4faf6;color:#175738;border-color:#d4e6d9}
+.is-public-demo .hchip,.is-public-demo .tips,.is-public-demo .tip{color:#355642}
+.is-public-demo .keepnote{background:#eaf6ed;color:#145637}
+.is-public-demo .dock{background:rgba(255,255,255,.96);border-top:1px solid #d6e7db;backdrop-filter:blur(11px)}
+.is-public-demo .sheet{background:#fffaf6;color:#233d2c}
+.is-public-demo .toast{border-radius:14px}
+.is-public-demo .foot__by,.is-public-demo a{color:#0d7245}
+@media(max-width:700px){
+ .is-public-demo .wrap{padding-inline:14px}
+ .is-public-demo .hd{border-radius:20px;padding:26px 16px}
+ .is-public-demo .hero__name{font-size:clamp(27px,7.2vw,36px)}
+ .is-public-demo .cover{border-radius:17px}
+ .is-public-demo .flow{padding:20px 17px;border-radius:18px}
+ .is-public-demo .steps__list{padding-inline:12px}
+}
+`;
