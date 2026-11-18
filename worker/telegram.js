@@ -676,6 +676,70 @@ async function sendList(ctx,offset=0){
  await ctx.say((own?'نمونه‌کارهای تو':'نمونه‌کارهای روی صفحه')+(offset?' (از '+fa(offset+1)+')':'')+'. برای حذف، روی هر کدام بزن:',{reply_markup:{inline_keyboard:rows}});
 }
 
+/* ---------- bot-only CRM: scoped to the linked salon, no manager website ---------- */
+const CRM_PAGE=8;
+const isStaff=ctx=>ctx.role==='staff'&&!!ctx.staff;
+const crmStatus={new:'جدید',called:'تماس گرفته شد',booked:'هماهنگ شد',cancelled:'بسته شد',declined:'امکان‌پذیر نیست'};
+const crmDate=ts=>new Intl.DateTimeFormat('fa-IR',{timeZone:'Asia/Tehran',dateStyle:'short',timeStyle:'short'}).format(ts||Date.now());
+const crmOffset=x=>Math.min(10000,Math.max(0,Number.parseInt(x,10)||0));
+const crmScope=(ctx,alias='l')=>isStaff(ctx)?' AND '+alias+'.staff_id=?':'';
+const crmArgs=ctx=>isStaff(ctx)?[ctx.staff.id]:[];
+async function crmLead(ctx,id){
+ if(!/^[a-f0-9-]{36}$/.test(String(id||'')))return null;
+ return one(ctx.db,'SELECT * FROM leads l WHERE l.id=? AND l.salon_id=?'+crmScope(ctx),id,ctx.salon.id,...crmArgs(ctx));
+}
+async function sendCustomers(ctx,offset=0){
+ offset=crmOffset(offset);
+ const scope=crmScope(ctx),innerScope=crmScope(ctx,'x');
+ const rows=await all(ctx.db,"SELECT l.id,l.name,l.phone,l.created_at,l.salon_status, (SELECT COUNT(*) FROM leads k WHERE k.salon_id=l.salon_id AND k.phone=l.phone) AS total_requests FROM leads l WHERE l.salon_id=? AND l.phone IS NOT NULL AND l.phone<>''"+scope+" AND l.id=(SELECT x.id FROM leads x WHERE x.salon_id=l.salon_id AND x.phone=l.phone"+innerScope+" ORDER BY x.created_at DESC,x.id DESC LIMIT 1) ORDER BY l.created_at DESC,l.id DESC LIMIT ? OFFSET ?",ctx.salon.id,...crmArgs(ctx),...crmArgs(ctx),CRM_PAGE+1,offset);
+ if(!rows.length){await ctx.say(offset?'مشتری دیگری در این صفحه نیست.':'هنوز مشتری شماره‌دار ثبت نشده است. شماره مشتری وقتی در فرم درخواست وارد شود به فهرست اضافه می‌شود.');return}
+ const visible=rows.slice(0,CRM_PAGE);
+ const detail=visible.map((x,i)=>fa(offset+i+1)+'. '+esc(x.name||'بدون نام')+'\n📱 '+esc(local(x.phone))+'  ·  '+fa(x.total_requests)+' درخواست  ·  '+esc(crmDate(x.created_at)));
+ const buttons=visible.map(x=>[{text:'👤 '+(x.name||local(x.phone)).slice(0,30),callback_data:'cu:d:'+x.id}]);
+ const nav=[];if(offset)nav.push({text:'قبلی',callback_data:'cu:p:'+Math.max(0,offset-CRM_PAGE)});if(rows.length>CRM_PAGE)nav.push({text:'بعدی',callback_data:'cu:p:'+(offset+CRM_PAGE)});if(nav.length)buttons.push(nav);
+ await ctx.say('👥 <b>مشتری‌های '+esc(ctx.salon.name)+'</b>\n\n'+detail.join('\n\n')+'\n\nبرای دیدن درخواست‌های هر مشتری روی نام او بزن.',{parse_mode:'HTML',reply_markup:{inline_keyboard:buttons}});
+}
+async function showCustomer(ctx,id){
+ const row=await crmLead(ctx,id);if(!row){await ctx.say('این مشتری در فهرست شما نیست.');return}
+ const reqs=await all(ctx.db,"SELECT l.id,l.look,l.salon_status,l.created_at FROM leads l WHERE l.salon_id=? AND l.phone=?"+crmScope(ctx)+" ORDER BY l.created_at DESC,l.id DESC LIMIT 6",ctx.salon.id,row.phone,...crmArgs(ctx));
+ const items=reqs.map((r,i)=>fa(i+1)+'. '+esc(r.look||'لباس نامشخص')+' — '+esc(crmStatus[r.salon_status]||r.salon_status||'جدید')+' ('+esc(crmDate(r.created_at))+')');
+ await ctx.say('👤 <b>'+esc(row.name||'مشتری')+'</b>\n📱 <b>'+esc(local(row.phone))+'</b>\n🏬 '+esc(ctx.salon.name)+'\n\n<b>درخواست‌های اخیر:</b>\n'+items.join('\n'),{parse_mode:'HTML',reply_markup:{inline_keyboard:reqs.slice(0,5).map((r,i)=>[{text:'باز کردن درخواست '+fa(i+1),callback_data:'cr:d:'+r.id}])}});
+}
+async function findCustomer(ctx,number){
+ let n;try{n=phone(number.trim())}catch{await ctx.say('برای جستجو شماره کامل را بنویس: /find 09121234567');return}
+ const x=await one(ctx.db,"SELECT l.id FROM leads l WHERE l.salon_id=? AND l.phone=?"+crmScope(ctx)+" ORDER BY l.created_at DESC,l.id DESC LIMIT 1",ctx.salon.id,n,...crmArgs(ctx));
+ if(!x){await ctx.say('این شماره در مشتری‌های '+ctx.salon.name+' ثبت نشده است.');return}
+ await showCustomer(ctx,x.id);
+}
+async function sendRequests(ctx,offset=0){
+ offset=crmOffset(offset);
+ const rows=await all(ctx.db,"SELECT l.id,l.name,l.phone,l.look,l.salon_status,l.created_at FROM leads l WHERE l.salon_id=?"+crmScope(ctx)+" ORDER BY l.created_at DESC,l.id DESC LIMIT ? OFFSET ?",ctx.salon.id,...crmArgs(ctx),CRM_PAGE+1,offset);
+ if(!rows.length){await ctx.say(offset?'درخواست دیگری در این صفحه نیست.':'هنوز درخواستی از مشتری‌ها ثبت نشده است.');return}
+ const visible=rows.slice(0,CRM_PAGE),buttons=visible.map(x=>[{text:'🗂 '+(x.name||local(x.phone)||'مشتری').slice(0,20)+' · '+(crmStatus[x.salon_status]||'جدید'),callback_data:'cr:d:'+x.id}]);
+ const nav=[];if(offset)nav.push({text:'قبلی',callback_data:'cr:p:'+Math.max(0,offset-CRM_PAGE)});if(rows.length>CRM_PAGE)nav.push({text:'بعدی',callback_data:'cr:p:'+(offset+CRM_PAGE)});if(nav.length)buttons.push(nav);
+ await ctx.say('📥 <b>درخواست‌های '+esc(ctx.salon.name)+'</b>\n\n'+visible.map((x,i)=>fa(offset+i+1)+'. '+esc(x.name||'مشتری')+' · '+esc(local(x.phone||''))+'\n'+esc(x.look||'لباس نامشخص')+' — '+esc(crmStatus[x.salon_status]||'جدید')+'\n'+esc(crmDate(x.created_at))).join('\n\n')+'\n\nروی هر درخواست بزن تا وضعیتش را مدیریت کنی.',{parse_mode:'HTML',reply_markup:{inline_keyboard:buttons}});
+}
+async function showRequest(ctx,id){
+ const x=await crmLead(ctx,id);if(!x){await ctx.say('این درخواست در فهرست شما نیست.');return}
+ const buttons=leadKeyboard(x,ctx.p,ctx.role==='manager'&&!x.staff_id?await teamOf(ctx.db,ctx.salon.id):[]);
+ await ctx.say('📋 <b>درخواست مشتری</b>\n👤 '+esc(x.name||'بدون نام')+'\n📞 '+esc(local(x.phone||''))+'\n👗 '+esc(x.look||'نامشخص')+'\n📊 '+esc(crmStatus[x.salon_status]||'جدید')+'\n🕒 '+esc(crmDate(x.created_at))+(x.visit_note?'\n📅 '+esc(x.visit_note):'')+(x.note?'\n📝 '+esc(x.note):'')+'\n\nبرای تماس یا هماهنگی، وضعیت را با دکمه‌های زیر تغییر بده.',{parse_mode:'HTML',reply_markup:buttons});
+}
+function crmCsvCell(value){let s=String(value??'').replace(/[\r\n]+/g,' ');if(/^[=+\-@\t]/.test(s))s="'"+s;return '"'+s.replace(/"/g,'""')+'"'}
+async function exportCustomers(ctx){
+ if(ctx.role!=='manager'){await ctx.say('خروجی کامل مشتری‌های مزون فقط برای مدیر متصل‌شده مجاز است.');return}
+ await limited(ctx.db,'bot-export:'+ctx.salon.id+':'+ctx.chat,5,'برای امروز تعداد دریافت فایل مشتری‌ها کافی است');
+ const rows=await all(ctx.db,"SELECT l.name,l.phone,l.look,l.salon_status,l.created_at FROM leads l WHERE l.salon_id=? AND l.phone IS NOT NULL AND l.phone<>'' ORDER BY l.created_at DESC LIMIT 3000",ctx.salon.id);
+ if(!rows.length){await ctx.say('هنوز شماره مشتری ثبت نشده است.');return}
+ const csv='\ufeff'+[['نام','موبایل','لباس','وضعیت','تاریخ']].concat(rows.map(x=>[x.name,local(x.phone),x.look,crmStatus[x.salon_status]||'جدید',new Date(x.created_at).toISOString()])).map(row=>row.map(crmCsvCell).join(',')).join('\r\n');
+ const fd=new FormData();fd.append('chat_id',ctx.chat);fd.append('document',new Blob([csv],{type:'text/csv;charset=utf-8'}),'customers-'+ctx.salon.slug+'.csv');fd.append('caption','مشتری‌ها و درخواست‌های '+ctx.salon.name+' — فقط برای استفاده داخلی و با رعایت حریم خصوصی.');
+ await call(ctx.env,ctx.p,'sendDocument',fd);
+}
+async function sendBalance(ctx){
+ if(ctx.role!=='manager'){await ctx.say('اعتبار مزون فقط برای مدیر قابل مشاهده است.');return}
+ const c=await creditStatus(ctx.db,ctx.salon);
+ await ctx.say('💳 <b>اعتبار «'+esc(ctx.salon.name)+'»</b>\nمانده: '+fa(c.left)+' از '+fa(c.limit)+' اعتبار\nمصرف: '+fa(c.used)+' اعتبار\n\nبرای درخواست افزایش اعتبار، یکی از بسته‌ها را انتخاب کن.',{parse_mode:'HTML',reply_markup:{inline_keyboard:PACKS.map(n=>[{text:'درخواست '+fa(n)+' اعتبار',callback_data:'rc:'+n}])}});
+}
+
 /* ---------- delivery ---------- */
 // A clean photo album in a fixed order (before, after, reference), then one details message
 // replying to it with the three status buttons. Albums get no per-photo captions on purpose:
