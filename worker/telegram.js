@@ -178,7 +178,7 @@ async function handle(req,env,p,exec){
   }
   if(state.p===p&&state.dress&&!photo&&textIn&&!textIn.startsWith('/')){
    const nm=text(textIn,150);await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);
-   if(nm.length<2||/\d{4,}/.test(digits(nm))){await ctx.say('این اسم درست نیست؛ فقط اسم لباس را با حروف بنویس.');await run(db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now()}),salon.id);return J({ok:true})}
+   if(!nm){await ctx.say('نام مدل نمی‌تواند خالی باشد.');await run(db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now()}),salon.id);return J({ok:true})}
    await run(db,'UPDATE portfolio SET title=? WHERE id=? AND salon_id=?',nm,state.dress,salon.id);await ctx.say('✅ اسم لباس شد «'+esc(nm)+'».');return J({ok:true});
   }
   if(state.p===p&&state.team&&!photo){await teamAnswer(ctx,state,textIn);return J({ok:true})}
@@ -720,7 +720,7 @@ async function dressReply(ctx,state,m,msg){
  }
  if(x.stage==='name'){
   const name=text(String(msg||'').trim(),150);
-  if(name.length<2||name.startsWith('/')||/\d{4,}/.test(digits(name))){await ctx.say('نام مدل معتبر نیست.');return}
+  if(!name){await ctx.say('نام مدل نمی‌تواند خالی باشد.');return}
   const id=uid();
   await run(ctx.db,'INSERT INTO portfolio(id,salon_id,title,category,description,stylist,images,published,try_on,permission,created_at,staff_id,media_group,line) VALUES(?,?,?,?,?,?,?,0,1,1,?,?,?,?)',id,ctx.salon.id,name,CATEGORIES.find(z=>name.includes(z))||'','',ctx.role==='staff'?ctx.staff.name:'',JSON.stringify(x.images),Date.now(),x.staffId,null,'dress');
   for(let i=0;i<4;i++)await run(ctx.db,'INSERT OR IGNORE INTO portfolio_imgs(portfolio_id,mid,media_id) VALUES(?,?,?)',id,i+1,x.images[i]);
