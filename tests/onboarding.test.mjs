@@ -7,7 +7,7 @@ import {SUPPORT_PROMPT,PROMPT_MARKER} from '../worker/ai-support-prompt.js';
 
 const origin='https://test.example';
 const migrations=readdirSync(new URL('../drizzle/',import.meta.url)).filter(f=>f.endsWith('.sql')).sort();
-function fixture(extra={}){const DB=database();for(const f of migrations)DB.sql.exec(readFileSync(new URL('../drizzle/'+f,import.meta.url),'utf8'));return {DB,BUCKET:memoryBucket(),OWNER_EMAIL:'owner@test',JOB_TOKEN:'job-test',TRUST_PLATFORM_IDENTITY:'true',TELEGRAM_BOT_TOKEN:'123:abc',TELEGRAM_WEBHOOK_SECRET:'hook-secret',TELEGRAM_BOT_USERNAME:'ayneh_bot',...extra};}
+function fixture(extra={}){const DB=database();for(const f of migrations)DB.sql.exec(readFileSync(new URL('../drizzle/'+f,import.meta.url),'utf8'));return {DB,BUCKET:memoryBucket(),OWNER_EMAIL:'owner@test',JOB_TOKEN:'job-test',TRUST_PLATFORM_IDENTITY:'true',SALON_MANAGEMENT_MODE:'legacy',TELEGRAM_BOT_TOKEN:'123:abc',TELEGRAM_WEBHOOK_SECRET:'hook-secret',TELEGRAM_BOT_USERNAME:'ayneh_bot',...extra};}
 // Stand-in for both bot APIs: records every call; `rules(method,body,platform)` may return a Response to override.
 function mockBots(rules=()=>null){const calls=[];const previous=globalThis.fetch;let mid=100;
  globalThis.fetch=async(url,init)=>{const u=String(url);const tg=u.startsWith('https://api.telegram.org/'),bale=u.startsWith('https://tapi.bale.ai/');if(!tg&&!bale)return previous(url,init);
