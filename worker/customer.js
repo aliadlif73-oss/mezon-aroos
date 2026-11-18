@@ -2569,7 +2569,7 @@ function kioskReset(){
  if(kioskReset.busy)return;kioskReset.busy=true;
  api('finish',{v:VISITOR}).then(function(){
   try{localStorage.clear()}catch(e){}try{sessionStorage.clear()}catch(e){}
-  location.replace(location.pathname+'?next=1'+(state.tag?'&r='+encodeURIComponent(state.tag):''));
+  location.replace(location.pathname+'?next=1');
  }).catch(function(e){kioskReset.busy=false;toast('پایان پرو انجام نشد؛ برای حفظ حریم خصوصی دوباره تلاش کنید: '+(e.message||''),'error')});
 }
 var kioskIdle=0,kioskWarnEl=null,kioskWarnT=0,kioskStarted=false;
