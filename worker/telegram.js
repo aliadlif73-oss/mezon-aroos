@@ -167,7 +167,7 @@ async function handle(req,env,p,exec){
    if(textIn==='/setup'){await wizardStart(ctx,0);return J({ok:true})}
   let state=parse(salon.bot_state);
    if(botOnly(env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return J({ok:true})}
-   if(botOnly(env)&&state.dressUpload&&state.chat===ctx.chat&&state.p===p){await dressReply(ctx,state,m,textIn);return J({ok:true})}
+   if(botOnly(env)&&state.dressUpload&&state.chat===ctx.chat&&state.p===p){if(!state.ts||Date.now()-state.ts>STALE){await expireState(env,salon,state,ctx)}else{await dressReply(ctx,state,m,textIn)}return J({ok:true})}
   const photo=photoOf(m);
   // An unfinished question older than 20 minutes no longer captures messages.
   if(state.p&&(!state.ts||Date.now()-state.ts>STALE)){await expireState(env,salon,state,ctx);state={}}
@@ -339,7 +339,7 @@ async function staffMessage(ctx,m,textIn){
  if(textIn==='/help'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
   if(botOnly(ctx.env)&&['/link','/share','/setup'].includes(textIn)){await ctx.say('این قابلیت غیرفعال است؛ تنظیمات فقط از ادمین آینه انجام می‌شوند.');return}
   if(botOnly(ctx.env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return}
-  const draft=parse(ctx.salon.bot_state);if(botOnly(ctx.env)&&draft.dressUpload&&draft.chat===ctx.chat&&draft.p===ctx.p){await dressReply(ctx,draft,m,textIn);return}
+  const draft=parse(ctx.salon.bot_state);if(botOnly(ctx.env)&&draft.dressUpload&&draft.chat===ctx.chat&&draft.p===ctx.p){if(!draft.ts||Date.now()-draft.ts>STALE)await expireState(ctx.env,ctx.salon,draft,ctx);else await dressReply(ctx,draft,m,textIn);return}
  if(textIn==='/list'){await sendList(ctx);return}
  if(textIn==='/requests'){await sendRequests(ctx);return}
  if(textIn==='/customers'){await sendCustomers(ctx);return}
@@ -456,7 +456,8 @@ export async function notifyConflict(env,lead,otherId){
 // Drops an unfinished wizard or team question. For the wizard the owner hears how far it got.
 async function expireState(env,salon,state,ctx){
  await run(env.DB,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);
- if(!Number.isInteger(state.step))return;
+ if(state.dressUpload){if(state.dressUpload.id){await run(env.DB,'DELETE FROM portfolio_imgs WHERE portfolio_id=?',state.dressUpload.id);await run(env.DB,'DELETE FROM portfolio WHERE id=? AND salon_id=? AND published=0',state.dressUpload.id,salon.id)}return}
+  if(!Number.isInteger(state.step))return;
  const fresh=await one(env.DB,'SELECT * FROM salons WHERE id=?',salon.id),st=setupStatus(fresh);
  await notifyOwner(env,{salon:fresh,kind:'setup',level:'warn',text:'تنظیم صفحه را نیمه‌کاره رها کرد (قدم '+fa(state.step+1)+' از '+fa(WIZ.length)+'؛ پر شده '+fa(st.filled.length)+' از '+fa(st.total)+(st.missing.length?'، مانده: '+st.missing.join('، '):'')+').'});
  const msg='تنظیم صفحهٔ مزون را بستم چون مدتی جوابی نیامد. هر وقت خواستید با /setup ادامه بدهید.';
@@ -567,11 +568,12 @@ async function onCallback(ctx,q){
    else if(!done&&!DRESS_SIZES.includes(size))note='سایز معتبر نیست';
    else{
     const chosen=parseDressSizes(dress.sizes);
-    if(!done){const next=chosen.includes(size)?chosen.filter(v=>v!==size):DRESS_SIZES.filter(v=>chosen.includes(v)||v===size);await run(db,'UPDATE portfolio SET sizes=? WHERE id=? AND salon_id=?',JSON.stringify(next),dress.id,salon.id);
+    if(done&&botOnly(env)&&!chosen.length){note='حداقل یک سایز انتخاب کنید';await ctx.say('برای ثبت نهایی حداقل یک سایز را انتخاب کنید.');}
+     else if(!done){const next=chosen.includes(size)?chosen.filter(v=>v!==size):DRESS_SIZES.filter(v=>chosen.includes(v)||v===size);await run(db,'UPDATE portfolio SET sizes=? WHERE id=? AND salon_id=?',JSON.stringify(next),dress.id,salon.id);
       try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:sizeKeyboard(dress.id,next)})}catch(e){await ctx.say('سایزهای فعلی «'+dress.title+'»:',{reply_markup:sizeKeyboard(dress.id,next)})}
       note='سایز '+SIZE_LABEL(size)+(next.includes(size)?' انتخاب شد':' حذف شد');
     }else{note=chosen.length?'سایزهای «'+dress.title+'»: '+chosen.map(SIZE_LABEL).join('، '):'سایزی مشخص نشده';
-       const st=parse(salon.bot_state);if(st.dressUpload?.id===dress.id&&st.p===p&&st.chat===chat)await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);
+       const st=parse(salon.bot_state);if(st.dressUpload?.id===dress.id&&st.p===p&&st.chat===chat){await run(db,'UPDATE portfolio SET published=1 WHERE id=? AND salon_id=?',dress.id,salon.id);await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id)}
       await ctx.say('✅ '+note);
       try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:{inline_keyboard:[]}})}catch(e){}
     }
@@ -689,7 +691,7 @@ const DRESS_ANGLES=['جلو','بغل راست','بغل چپ','پشت'];
 async function beginDress(ctx){
  const state=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
  if(state.dressUpload&&state.chat!==ctx.chat){await ctx.say('ثبت دیگری در مزون در جریان است.');return}
- if(state.dressUpload){let x=state.dressUpload;await ctx.say(x.stage==='name'?'نام مدل را بفرستید.':x.stage==='sizes'?'سایزها را انتخاب کنید.':'عکس '+DRESS_ANGLES[x.images.length]+' را ارسال کنید.');if(x.stage==='sizes')await askDressSizes(ctx,x.id,x.name);return}
+ if(state.dressUpload){if(!state.ts||Date.now()-state.ts>STALE){await expireState(ctx.env,ctx.salon,state,ctx);return beginDress(ctx)}let x=state.dressUpload;await ctx.say(x.stage==='name'?'نام مدل را بفرستید.':x.stage==='sizes'?'سایزها را انتخاب کنید.':'عکس '+DRESS_ANGLES[x.images.length]+' را ارسال کنید.');if(x.stage==='sizes')await askDressSizes(ctx,x.id,x.name);return}
  if(state.team||Number.isInteger(state.step)){await ctx.say('ابتدا فرآیند قبلی را پایان دهید.');return}
  const draft={p:ctx.p,chat:ctx.chat,ts:Date.now(),dressUpload:{stage:'photos',images:[],staffId:ctx.role==='staff'?ctx.staff.id:null}};
  await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify(draft),ctx.salon.id);
@@ -698,7 +700,7 @@ async function beginDress(ctx){
 async function cancelDress(ctx){
  const s=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
  if(!s.dressUpload||s.chat!==ctx.chat||s.p!==ctx.p){await ctx.say('ثبت فعالی ندارید.');return}
- if(s.dressUpload.id)await run(ctx.db,'DELETE FROM portfolio WHERE id=? AND salon_id=?',s.dressUpload.id,ctx.salon.id);
+ if(s.dressUpload.id){await run(ctx.db,'DELETE FROM portfolio_imgs WHERE portfolio_id=?',s.dressUpload.id);await run(ctx.db,'DELETE FROM portfolio WHERE id=? AND salon_id=?',s.dressUpload.id,ctx.salon.id)}
  await run(ctx.db,"UPDATE salons SET bot_state='' WHERE id=?",ctx.salon.id);
  await ctx.say('ثبت لغو شد.');
 }
@@ -720,7 +722,7 @@ async function dressReply(ctx,state,m,msg){
   const name=text(String(msg||'').trim(),150);
   if(name.length<2||name.startsWith('/')||/\d{4,}/.test(digits(name))){await ctx.say('نام مدل معتبر نیست.');return}
   const id=uid();
-  await run(ctx.db,'INSERT INTO portfolio(id,salon_id,title,category,description,stylist,images,published,try_on,permission,created_at,staff_id,media_group,line) VALUES(?,?,?,?,?,?,?,1,1,1,?,?,?,?)',id,ctx.salon.id,name,CATEGORIES.find(z=>name.includes(z))||'','',ctx.role==='staff'?ctx.staff.name:'',JSON.stringify(x.images),Date.now(),x.staffId,null,'dress');
+  await run(ctx.db,'INSERT INTO portfolio(id,salon_id,title,category,description,stylist,images,published,try_on,permission,created_at,staff_id,media_group,line) VALUES(?,?,?,?,?,?,?,0,1,1,?,?,?,?)',id,ctx.salon.id,name,CATEGORIES.find(z=>name.includes(z))||'','',ctx.role==='staff'?ctx.staff.name:'',JSON.stringify(x.images),Date.now(),x.staffId,null,'dress');
   for(let i=0;i<4;i++)await run(ctx.db,'INSERT OR IGNORE INTO portfolio_imgs(portfolio_id,mid,media_id) VALUES(?,?,?)',id,i+1,x.images[i]);
   await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now(),dressUpload:{...x,id,name,stage:'sizes'}}),ctx.salon.id);
   await askDressSizes(ctx,id,name);return;
