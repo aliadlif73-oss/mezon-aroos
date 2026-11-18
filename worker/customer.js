@@ -8,6 +8,21 @@ import {baseCSS,markSVG,illos,MZ_D} from './design.js';
 import {freshDemoCSS} from './ayneh-theme.js';
 
 const customerCSS=String.raw`
+
+/* DEFAULT for all /s/:slug pages: Royal-style horizontal banner, ONLY cover + logo + name. */
+.salon-brand{width:100%;overflow:hidden;border:1px solid #e9e0d3;border-radius:19px;background:#fffaf5;box-shadow:0 13px 32px -27px rgba(65,42,23,.38)}
+.salon-brand__cover{position:relative;height:clamp(108px,29vw,152px);background:linear-gradient(115deg,#e6dbcb,#f7f0e6);overflow:hidden}
+.salon-brand__cover>img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 47%}
+.salon-brand__cover:not(.skel)::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(61,45,23,.10),transparent 40%)}
+.salon-brand__identity{position:relative;display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 16px;background:#fffaf5}
+.salon-brand__logo{position:relative;z-index:1;display:grid;place-items:center;flex:none;width:64px;height:64px;margin-top:-28px;border-radius:50%;border:3px solid #fffaf5;outline:1px solid #d7be91;background:#fffdfa;overflow:hidden;box-shadow:0 6px 17px -10px rgba(59,38,23,.4)}
+.salon-brand__logo-img{width:100%;height:100%;object-fit:contain}
+.salon-brand__logo-letter{font-family:var(--display);font-size:29px;font-weight:800;color:#967547;line-height:1}
+.salon-brand__name{margin:0;min-width:0;flex:1;font-family:var(--display);font-size:clamp(20px,4.6vw,27px);font-weight:800;line-height:1.4;color:#443428;white-space:nowrap;overflow:hidden;text-align:start}
+.salon-brand__name.is-wrapped{white-space:normal;overflow-wrap:anywhere}
+@media(max-width:480px){.salon-brand{border-radius:17px}.salon-brand__cover{height:clamp(104px,29vw,128px)}.salon-brand__identity{min-height:68px;padding:10px 13px;gap:11px}.salon-brand__logo{width:58px;height:58px;margin-top:-24px}.salon-brand__name{font-size:21px}}
+@media(min-width:760px){.salon-brand__cover{height:190px}.salon-brand__identity{min-height:80px;padding:12px 24px;gap:17px}.salon-brand__logo{width:77px;height:77px;margin-top:-30px}.salon-brand__name{font-size:27px}}
+
 .hd{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto auto;align-content:center;justify-items:center;gap:22px;margin:12px 0 6px;min-height:clamp(300px,50vh,460px);padding:34px 20px;border-radius:var(--r-lg);overflow:hidden;border:1px solid rgba(201,165,92,.45);background:radial-gradient(70% 120% at 85% 0,rgba(255,255,255,.95),transparent 62%),radial-gradient(60% 100% at 10% 100%,rgba(232,217,176,.55),transparent 70%),linear-gradient(135deg,#f7f3ec,#e9efec);box-shadow:var(--lift)}
 .hd::before{content:"";position:absolute;inset:7px;border-radius:calc(var(--r-lg) - 6px);border:1px solid rgba(201,165,92,.35);pointer-events:none}
 .hd::after{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 12% 28%,rgba(201,165,92,.5) 0 1.5px,transparent 2.5px),radial-gradient(circle at 36% 80%,rgba(201,165,92,.4) 0 1.5px,transparent 2.5px),radial-gradient(circle at 62% 22%,rgba(201,165,92,.45) 0 1.5px,transparent 2.5px),radial-gradient(circle at 90% 74%,rgba(201,165,92,.5) 0 1.5px,transparent 2.5px)}
@@ -748,20 +763,28 @@ function showFatal(msg){
 function heroTag(){return 'لباس عروس را روی اندام خودت ببین؛ سایز و فرم بدنت همان می‌ماند.'}
 function renderHead(){
  var s=state.pub.salon,p=s.profile||{},head=$('#head');
- var logo=p.logo?el('img',{class:'hd__logo',src:media(p.logo),alt:'لوگوی '+s.name}):el('span',{class:'hd__logo hd__logo--mark'},[el('img',{src:'/brand/logo-108.png',srcset:'/brand/logo-108.png 1x,/brand/logo-216.png 2x',width:78,height:96,alt:'مزون آینه',decoding:'async'})]);
- var name=el('h1',{class:'hd__name hero__name',text:s.name});
- head.replaceChildren(el('div',{class:'wrap'},[el('div',{class:'hd'},[el('div',{class:'hd__side hd__side--logo'},[logo]),el('div',{class:'hd__side hd__side--name'},[name])]),
-  el('div',{class:'hero__cta'},[el('button',{class:'btn btn--primary btn--lg',type:'button',onclick:function(){go(state.original?2:1)},html:ICO.camera+'<span>شروع با عکس خودم</span>'})])]));
+ // Shared component for every salon, including newly created ones.
+ var cover=p.cover?media(p.cover):'/demo/cover.jpg';
+ var initial=(s.name||'').replace(/^مزون\s*/,'').trim().charAt(0)||'م';
+ var logo=p.logo?el('img',{class:'salon-brand__logo-img',src:media(p.logo),alt:''}):el('span',{class:'salon-brand__logo-letter',text:initial});
+ var name=el('h1',{class:'salon-brand__name',text:s.name});
+ // No unrelated CTAs, addresses, phone numbers or booking controls inside the header.
+ head.replaceChildren(el('div',{class:'wrap'},[
+  el('div',{class:'salon-brand'},[
+   el('div',{class:'salon-brand__cover'},[el('img',{src:cover,alt:'',loading:'eager',decoding:'async'})]),
+   el('div',{class:'salon-brand__identity'},[el('div',{class:'salon-brand__logo'},[logo]),name])
+  ])
+ ]));
  fitName(name);
  var ft=$('#foot');if(ft&&p.logo)ft.replaceChildren(el('a',{class:'foot__by',href:'/'},[el('span',{text:'با مزون آینه'}),el('img',{src:'/brand/logo-36.png',srcset:'/brand/logo-36.png 1x,/brand/logo-72.png 2x,/brand/logo-108.png 3x',width:15,height:18,alt:'',decoding:'async'})]));
 }
 // The salon name always sits on one line: the font shrinks to fit; only very long names wrap.
 function fitName(n){
  function fit(){if(!n.isConnected)return;n.classList.remove('is-wrapped');n.style.fontSize='';var max=parseFloat(getComputedStyle(n).fontSize)||40,size=max;
-  while(n.scrollWidth>n.clientWidth+1&&size>20){size-=1;n.style.fontSize=size+'px'}
+  while(n.scrollWidth>n.clientWidth+1&&size>17){size-=1;n.style.fontSize=size+'px'}
   if(n.scrollWidth>n.clientWidth+1)n.classList.add('is-wrapped')}
  fit();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
- if(!fitName.on){fitName.on=1;var t=0;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(function(){var x=$('.hero__name');if(x)fitName(x)},120)})}
+ if(!fitName.on){fitName.on=1;var t=0;window.addEventListener('resize',function(){clearTimeout(t);t=setTimeout(function(){var x=$('.salon-brand__name');if(x)fitName(x)},120)})}
 }
 
 /* ---------- about the salon: every detail lives here ---------- */
@@ -2856,7 +2879,7 @@ export const customerHTML=String.raw`<!doctype html><html lang="fa" dir="rtl"><h
 <style>__CSS__.trialbar{position:sticky;top:0;z-index:30;padding:8px 14px;text-align:center;font-size:13px;font-weight:700;background:var(--accent-ink);color:#fff}.trialbar.is-over{background:var(--danger)}</style>
 </head><body>
 <a class="skip" href="#main">پرش به محتوای اصلی</a>
-<header class="hero" id="head"><div class="wrap"><div class="hero__bar"><div class="skel" style="width:70px;height:22px"></div></div><div class="skel cover"></div><div class="hero__body"><div><div class="skel" style="width:70%;height:38px"></div><div class="skel" style="width:52%;height:14px;margin-top:14px"></div></div></div></div></header>
+<header class="hero" id="head"><div class="wrap"><div class="salon-brand"><div class="salon-brand__cover skel"></div><div class="salon-brand__identity"><div class="salon-brand__logo skel"></div><div class="salon-brand__name skel" style="width:55%;height:28px"></div></div></div></div></header>
 <nav class="steps" id="steps" aria-label="مراحل" hidden></nav>
 <main class="wrap" id="main">
  <div class="layout layout--solo">

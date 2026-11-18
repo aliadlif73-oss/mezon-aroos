@@ -38,8 +38,8 @@ async function salonPage(u,env){
  const img=p.cover||p.logo?origin+'/api/s/'+salon.slug+'/media/'+(p.cover||p.logo):'';
  const tags='<title>'+attr(title)+'</title>\n<meta name="description" content="'+attr(desc)+'">\n<meta property="og:title" content="'+attr(title)+'">\n<meta property="og:description" content="'+attr(desc)+'">\n<meta property="og:type" content="website">\n<meta property="og:url" content="'+attr(url)+'">\n<meta property="og:site_name" content="مزون آینه">\n<meta property="og:locale" content="fa_IR">\n'+(img?'<meta property="og:image" content="'+attr(img)+'">\n<meta property="og:image:alt" content="'+attr(salon.name)+'">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="'+attr(img)+'">\n':'<meta property="og:image" content="'+attr(origin)+'/og.jpg">\n<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n<meta name="twitter:card" content="summary_large_image">\n<meta name="twitter:image" content="'+attr(origin)+'/og.jpg">\n')+'<link rel="canonical" href="'+attr(url)+'">';
  const pre=p.cover?'<link rel="preload" as="image" href="/api/s/'+attr(salon.slug)+'/media/'+attr(p.cover)+'">\n':'';
- const skelName='<div class="hero__name" style="height:auto">'+attr(salon.name)+'</div>';
- return themeIfDemo(customerHTML.replace('<div class="skel" style="width:70%;height:38px"></div>',()=>skelName).replace(/<meta name="description"[^>]*>\n?/,'').replace(/<meta property="og:[a-z:]+"[^>]*>\n?/g,'').replace(/<title>[^<]*<\/title>/,()=>pre+tags));
+ const skelName='<h1 class="salon-brand__name">'+attr(salon.name)+'</h1>';
+ return themeIfDemo(customerHTML.replace('<div class="salon-brand__name skel" style="width:55%;height:28px"></div>',()=>skelName).replace(/<meta name="description"[^>]*>\n?/,'').replace(/<meta property="og:[a-z:]+"[^>]*>\n?/g,'').replace(/<title>[^<]*<\/title>/,()=>pre+tags));
 }
 // Registers the bot webhook once per (origin, secret, token) so a fresh deploy or rotated secret
 // needs no manual step. Failures are swallowed; the admin button and /api/internal/webhook still work.
