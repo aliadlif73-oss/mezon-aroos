@@ -879,7 +879,7 @@ function flowHead(title,sub){
  return el('div',{class:'flow__head'},[h('h2',title,'flow__title'),sub?h('p',sub,'flow__sub'):null]);
 }
 function isTablet(){try{return !!(navigator.maxTouchPoints>0&&Math.min(screen.width,screen.height)>=600)}catch(e){return false}}
-function openCamera(){if((DESK||isTablet())&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){kioskCamera();return}var cam=el('input',{type:'file',accept:'image/*',capture:'user'});cam.style.display='none';cam.addEventListener('change',function(){handleFile(cam.files&&cam.files[0],'original');cam.remove()});document.body.append(cam);cam.click()}
+function openCamera(){if((DESK||isTablet())&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){kioskCamera();return}var cam=el('input',{type:'file',accept:'image/*',capture:'environment'});cam.style.display='none';cam.addEventListener('change',function(){handleFile(cam.files&&cam.files[0],'original');cam.remove()});document.body.append(cam);cam.click()}
 function stepPhoto(){
  var box=el('div',{class:'panel flow flow--shoot'});
  if(!state.original&&state.preview){
@@ -887,24 +887,20 @@ function stepPhoto(){
   box.append(el('div',{class:'photo'},[el('div',{class:'mirror'},[el('div',{class:'mirror__glass'},[el('img',{src:state.preview,alt:'عکس انتخابی شما'}),el('div',{class:'upl',role:'status'},[el('span',{class:'upl__scan'}),el('span',{text:'در حال بارگذاری…'}),el('span',{class:'upl__bar'},[el('i')])])])])]));
  }else if(!state.original){
   box.append(flowHead(LP().head,LP().sub));
-  var input=el('input',{type:'file',accept:'image/jpeg,image/png,image/webp',id:'pick',class:'sr-only','aria-label':'انتخاب عکس'});
-  var drop=el('label',DESK?{class:'upload mirror'}:{class:'upload mirror',for:'pick'},[el('div',{class:'upload__in mirror__glass'},[
+  // This is an informational illustration, never an upload/drop zone.
+  // The salon device may capture with its camera, or show a QR to receive from the customer's phone.
+  var drop=el('div',{class:'upload mirror'},[el('div',{class:'upload__in mirror__glass'},[
    el('strong',{class:'upload__say',text:'عکست رو بده تا عروست کنم.'})
   ])]);
-  if(DESK)drop.addEventListener('click',function(e){e.preventDefault();openCamera()});
-  input.addEventListener('change',function(){handleFile(input.files&&input.files[0],'original')});
-  ['dragenter','dragover'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add('is-drag')})});
-  ['dragleave','drop'].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove('is-drag')})});
-  drop.addEventListener('drop',function(e){var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];handleFile(f,'original')});
   var side=el('div',{class:'shoot__side'},[
    h('p',keepNote(),'keepnote'),
    el('details',{class:'collapse tipsbox',open:''},[el('summary',{html:ICO.info+'<span>نکات یک عکس خوب</span>'}),el('ul',{class:'tips'},LP().tips.map(function(t){return el('li',{class:'tip'},[el('span',{html:ICO[t[0]]}),el('span',{},[el('b',{text:t[1]}),document.createTextNode(t[2])])])}))]),
    el('div',{class:'shoot__btns'},[
-    el('button',{class:'btn btn--primary',type:'button',onclick:pickNow,html:ICO.gallery+'<span>'+(DESK?'انتخاب از گالری گوشی (QR)':'انتخاب از گالری')+'</span>'}),
+    el('button',{class:'btn btn--primary',type:'button',onclick:pickNow,html:ICO.gallery+'<span>انتخاب از گالری گوشی (QR)</span>'}),
     el('button',{class:'btn btn--ghost',type:'button',onclick:openCamera,html:ICO.camera+'<span>عکس با دوربین</span>'})
    ])
   ]);
-  box.append(input,el('div',{class:'demo-row'},[demoCompare('demo--small'),el('div',{class:'demo-row__text'},[h('b','این‌طوری می‌شود'),h('span',LP().demo)])]),el('div',{class:'shoot'},[drop,side]));
+  box.append(el('div',{class:'demo-row'},[demoCompare('demo--small'),el('div',{class:'demo-row__text'},[h('b','این‌طوری می‌شود'),h('span',LP().demo)])]),el('div',{class:'shoot'},[drop,side]));
  }else{
   var fresh=state.justUploaded;
   box.append(flowHead(fresh?'عکست بارگذاری شد':'عکست آماده است',fresh&&!state.photoWarn?'الان می‌رویم سراغ انتخاب لباس…':LP().ready));
@@ -1762,7 +1758,7 @@ function photoReview(src,r,use){
  var panel=el('div',{class:'sheet__panel'});
  panel.append(el('div',{class:'sheet__head'},[h('h2',r.hard.length?'این عکس مناسب نیست':'یک نکته دربارهٔ عکس'),el('button',{class:'sheet__x',type:'button','aria-label':'بستن',text:'×',onclick:closeSheet})]));
  var list=el('div',{class:'rev__list'},r.hard.map(function(x){return (function(){var d=el('div',{class:'rev__bad ic-inline',html:ICO.ban});d.append(h('span',x));return d})()}).concat(r.soft.map(function(x){return (function(){var d=el('div',{class:'rev__warn ic-inline',html:ICO.warn});d.append(h('span',x));return d})()})));
- var btns=[el('button',{class:'btn btn--primary',type:'button',text:'عکس دیگر می‌گیرم',onclick:function(){closeSheet();pickNow()}})];
+ var btns=[el('button',{class:'btn btn--primary',type:'button',text:'انتخاب عکس دیگر از گوشی',onclick:function(){closeSheet();pickNow()}})];
  if(!r.hard.length)btns.push(el('button',{class:'btn btn--ghost',type:'button',text:'با همین عکس ادامه بده',onclick:function(){closeSheet();use()}}));
  var tips=r.hard.length?el('ul',{class:'rev__tips'},['تمام‌قد: از سر تا کفش، ایستاده و روبه‌رو','نور روشن و یکنواخت؛ پشت به پنجره یا چراغ نباش','گوشی ثابت و عمودی؛ از نسخهٔ اصلی عکس استفاده کن، نه فشرده‌شده','لباس ساده و چسبان تا اندام معلوم باشد'].map(function(t){return h('li',t)})):null;
  panel.append(el('div',{class:'rev'},[el('img',{src:src,alt:'',class:'rev__img'}),list,tips,el('div',{class:'rev__btns'},btns)]));
@@ -1878,7 +1874,7 @@ function friendly(msg){
  if(/درخواست را نپذیرفت/.test(msg))return 'سرویس تصویر درخواست را نپذیرفت. کمی بعد دوباره تلاش کن.';
  return msg;
 }
-function pickNow(){if(DESK){openPhonePair();return}var pick=$('#pick');if(pick)pick.click();else toast('اول عکس خودت را اضافه کن')}
+function pickNow(){openPhonePair()}
 function updateProgress(){if(PMC&&PMC.root&&PMC.root.isConnected&&PMC.mode==='build')PMC.kick()}
 // The state machine (genReduce) decides what the scene shows; this function only feeds it what happened.
 var GM=genReduce(null,{type:'leave'}),POLLTOK=0;
@@ -2606,7 +2602,7 @@ function kioskBoot(){
 // Live camera with a standing guide and a 3-2-1 countdown, so the full-length photo is taken in front of the screen.
 var SIL_SVG='<svg viewBox="0 0 200 440" aria-hidden="true"><ellipse class="sil" cx="100" cy="40" rx="19" ry="23"/><path class="sil" d="M92 62 L92 74 C78 78 62 84 58 100 C55 118 66 150 76 176 C70 220 52 330 30 428 L170 428 C148 330 130 220 124 176 C134 150 145 118 142 100 C138 84 122 78 108 74 L108 62 Z"/></svg>';
 function kioskCamera(){
- if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){var i=$('#pick');if(i)i.click();return}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){openCamera();return}
  var video=el('video',{autoplay:'',playsinline:'',muted:''});video.muted=true;
  var num=el('b',{text:fa(10)}),ring=el('div',{class:'kcam__ring',html:'<svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44"/></svg>'});ring.append(num);
  var facing='user',stream=null,timer=0,done=false,P=(state.pub&&state.pub.salon&&state.pub.salon.profile)||{};
