@@ -105,7 +105,7 @@ export async function noteFailure(ctx){
 export async function sendWelcome(ctx,{panel=false,force=false}={}){
  let queued=false;
  await typing(ctx);
- await sendSafe(ctx,WELCOME_TEXT,{parse_mode:'HTML',reply_markup:mainKeyboard(ctx.origin,panel)});
+ await sendSafe(ctx,WELCOME_TEXT,{parse_mode:'HTML',reply_markup:mainKeyboard(ctx.origin,panel,ctx.env?.SALON_MANAGEMENT_MODE!=='legacy')});
  // Rows for panel chats use kind 'introf': processDue does not skip them as "already a salon chat".
  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:panel||force?'introf':'intro',force:force||!!ctx.owner})}catch(e){console.error('schedule intro',e?.message)}
  // Primary path: keep this request's isolate alive and send when due. The queue row is the fallback; processDue claims rows atomically, so the video can never go twice.
