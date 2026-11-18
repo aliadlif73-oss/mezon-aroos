@@ -1497,3 +1497,48 @@ test('brand logo: pages link png/ico icons, the manifest icons exist and headers
  for(const p of ['/','/register','/privacy','/admin']){const h=await (await app.fetch(new Request(origin+p),e)).text();
   assert.match(h,/rel="icon" href="\/favicon\.ico"/,p);assert.match(h,/rel="apple-touch-icon"/,p);assert.match(h,/<img class="brandmark"[^>]*alt="مزون آینه"[^>]*>/,p)}
 });
+
+test('portfolio dress sizes: multi-select persisted, validated and available to the bride',async()=>{
+ const e=fixture(),sal=await salon(e),id=(await call(e,'/api/s/'+sal.slug+'/owner/portfolio/add',{media_id:await ownerPortfolio(e,sal),title:'لباس چندسایزی',sizes:['38','42','F','999']},OWNER)).data.id;
+ let row=e.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(id);
+ assert.deepEqual(JSON.parse(row.sizes),['38','42','F']);
+ const updated=await call(e,'/api/s/'+sal.slug+'/owner/portfolio/sizes',{id,sizes:['44','36','44','42']},OWNER);
+ assert.equal(updated.status,200,JSON.stringify(updated));
+ assert.deepEqual(updated.data.sizes,['36','42','44']);
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/owner/portfolio/sizes',{id,sizes:['40']},{user:'stranger',email:'other@test'})).status,403);
+ row=e.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(id);
+ assert.deepEqual(JSON.parse(row.sizes),['36','42','44']);
+ const publicPage=await call(e,'/api/s/'+sal.slug+'/public');
+ assert.deepEqual(JSON.parse(publicPage.data.portfolio.find(x=>x.id===id).sizes),['36','42','44']);
+ assert.match(customerHTML,/سایزهای موجود:/);
+});
+test('Telegram catalog sends size buttons after uploading and toggles several choices per dress',async()=>{
+ const e=tgEnv(fixture()),sal=await salon(e),tg=mockTelegram();
+ try{
+  await linkSalon(e,sal,777);
+  await hook(e,{update_id:900,message:{chat:{id:777,type:'private'},photo:[{file_id:'p-size',file_size:100}],caption:'عروس هلویی'}});
+  const dress=e.DB.sql.prepare("SELECT id,sizes FROM portfolio WHERE title='عروس هلویی'").get();
+  assert.ok(dress);
+  const picker=tg.calls.find(c=>c.method==='sendMessage'&&c.body.text?.includes('سایزهای موجود برای'));
+  assert.ok(picker,'bot should request physical sizes');
+  const callback=async(value,index)=>hook(e,{callback_query:{id:'sz'+index,data:'sz:'+dress.id+':'+value,message:{chat:{id:777},message_id:12}}});
+  await callback('38',1);await callback('42',2);await callback('38',3);
+  assert.deepEqual(JSON.parse(e.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(dress.id).sizes),['42']);
+  await hook(e,{callback_query:{id:'szdone',data:'szdone:'+dress.id,message:{chat:{id:777},message_id:12}}});
+  assert.ok(tg.calls.some(c=>c.method==='sendMessage'&&c.body.text?.includes('سایزهای «عروس هلویی»')));
+ }finally{tg.restore()}
+});
+test('finish fitting revokes old kiosk session, temporary photos and QR, then issues clean session for next bride',async()=>{
+ const e=fixture(),sal=await salon(e),guestOne=await guest(e,sal),original=await upload(e,sal,guestOne);
+ const pair=(await call(e,'/api/s/'+sal.slug+'/pair',{v:'customer-one'},guestOne)).data;
+ const finished=await call(e,'/api/s/'+sal.slug+'/finish',{v:'customer-one'},guestOne);
+ assert.equal(finished.status,200,JSON.stringify(finished));assert.ok(finished.cookie&&finished.cookie!==guestOne.cookie);
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/session',undefined,guestOne)).status,401,'old session cannot be reused');
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/session',undefined,{cookie:finished.cookie})).status,200);
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/media/'+original,undefined,{cookie:finished.cookie})).status,404,'old temporary photo was physically deleted');
+ assert.equal((await app.fetch(new Request(origin+'/u/'+pair.code),e)).status,404,'old QR expired');
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/pair/check?seen=',undefined,{cookie:finished.cookie})).data.state,'none');
+ assert.match(customerHTML,/پایان پرو و مشتری بعدی/);
+ assert.match(customerHTML,/next=1/);
+ assert.match(customerHTML,/openOtp\(function\(\)\{go\(1\)\}\)/);
+});

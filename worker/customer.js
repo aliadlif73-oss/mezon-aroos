@@ -692,7 +692,7 @@ function tehranDate(d){var p={};new Intl.DateTimeFormat('en-US',{timeZone:'Asia/
 function el(tag,attrs,children){var e=document.createElement(tag);attrs=attrs||{};Object.keys(attrs).forEach(function(k){var v=attrs[k];if(v===undefined||v===null)return;if(k==='text')e.textContent=v;else if(k==='html')e.innerHTML=v;else if(k==='class')e.className=v;else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);else if(k==='checked'||k==='disabled'||k==='hidden'||k==='required')e[k]=!!v;else e.setAttribute(k,v)});(children||[]).forEach(function(c){if(c!==null&&c!==undefined&&c!==false)e.append(c)});return e}
 function h(tag,text,cls){return el(tag,{class:cls||'',text:text})}
 function media(id){return '/api/s/'+SLUG+'/media/'+id}
-function dressInfo(p){var m={sale:'فروش',rent:'اجاره',both:'فروش و اجاره'}[p.mode]||'',t=[m,p.price].filter(Boolean).join(' · '),st=p.stock==='available'?'موجود':p.stock==='ask'?'موجودی: بپرسید':'';if(!t&&!st)return el('span',{class:'dress-info'});return el('span',{class:'dress-info'},[t?el('span',{text:t}):null,st?el('em',{class:p.stock==='available'?'ok':'',text:st}):null])}
+function dressInfo(p){var m={sale:'فروش',rent:'اجاره',both:'فروش و اجاره'}[p.mode]||'',t=[m,p.price].filter(Boolean).join(' · '),st=p.stock==='available'?'موجود':p.stock==='ask'?'موجودی: بپرسید':'',sizes=[];try{sizes=Array.isArray(p.sizes)?p.sizes:JSON.parse(p.sizes||'[]')}catch(e){}var sizeText=Array.isArray(sizes)&&sizes.length?'سایزهای موجود: '+sizes.map(function(x){return x==='F'?'فری‌سایز':x}).join('، '):'';if(!t&&!st&&!sizeText)return el('span',{class:'dress-info'});return el('span',{class:'dress-info'},[t?el('span',{text:t}):null,st?el('em',{class:p.stock==='available'?'ok':'',text:st}):null,sizeText?el('span',{text:sizeText}):null])}
 function fa_msg(m,fb){return typeof m==='string'&&/[\u0600-\u06FF]/.test(m)?m:(fb||'مشکلی پیش آمد؛ کمی بعد دوباره امتحان کن.')}
 function api(path,body,raw){
  var init={};
@@ -2566,8 +2566,11 @@ function openQR(job,what,extra){
  }).catch(function(e){box.replaceChildren(notice('danger',(e&&e.message&&e.message!=='درخواست معتبر نیست')?e.message:'ساخت لینک ممکن نشد؛ یک بار دیگر امتحان کن'))});
 }
 function kioskReset(){
- var done=function(){try{localStorage.clear()}catch(e){}try{sessionStorage.clear()}catch(e){}location.replace(location.pathname+'?kiosk=1'+(state.tag?'&r='+encodeURIComponent(state.tag):''))};
- api('erase',{v:VISITOR}).then(done,done);
+ if(kioskReset.busy)return;kioskReset.busy=true;
+ api('finish',{v:VISITOR}).then(function(){
+  try{localStorage.clear()}catch(e){}try{sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname+'?kiosk=1&next=1'+(state.tag?'&r='+encodeURIComponent(state.tag):''));
+ }).catch(function(e){kioskReset.busy=false;toast('پایان پرو انجام نشد؛ برای حفظ حریم خصوصی دوباره تلاش کنید: '+(e.message||''),'error')});
 }
 var kioskIdle=0,kioskWarnEl=null,kioskWarnT=0,kioskStarted=false;
 function kioskActivity(){if(!kioskStarted||kioskWarnEl)return;clearTimeout(kioskIdle);kioskIdle=setTimeout(kioskWarn,90000)}
@@ -2591,13 +2594,16 @@ function kioskBoot(){
  document.documentElement.classList.add('kiosk');
  document.addEventListener('contextmenu',function(e){e.preventDefault()});
  ['pointerdown','keydown','touchstart','wheel'].forEach(function(ev){document.addEventListener(ev,kioskActivity,{passive:true})});
- var end=el('button',{class:'kend',type:'button',text:'پایان و پاک کردن عکس‌ها',onclick:function(){
-  var box=el('div',{class:'kov'},[el('div',{class:'kov__card'},[h('h2','پایان؟'),h('p','عکس‌های تو از روی این دستگاه پاک می‌شود. اگر لینک عکس را نگرفته‌ای، دیگر نمی‌توانی ببینی‌اش.'),el('button',{class:'btn btn--primary',type:'button',text:'بله، پاک کن',onclick:kioskReset}),el('button',{class:'btn btn--ghost',type:'button',text:'برگرد',onclick:function(){box.remove()}})])]);
+ var end=el('button',{class:'kend',type:'button',text:'پایان پرو',onclick:function(){
+  var box=el('div',{class:'kov'},[el('div',{class:'kov__card'},[h('h2','پایان پرو این مشتری؟'),h('p','تصاویر موقت و دسترسی این نشست بسته می‌شود و صفحه برای ثبت شماره مشتری بعدی آماده خواهد شد. تصاویر ارسالی به مزون مطابق سیاست نگهداری حفظ می‌شوند.'),el('button',{class:'btn btn--primary',type:'button',text:'پایان پرو و مشتری بعدی',onclick:kioskReset}),el('button',{class:'btn btn--ghost',type:'button',text:'برگرد',onclick:function(){box.remove()}})])]);
   document.body.append(box);
  }});
  document.body.append(end);
- var name=(document.title||'').split('|')[0].trim();
- welcomeFlow({kiosk:true});
+ if(/[?&]next=1(?:&|$)/.test(location.search)){
+  // Finish fitting: next customer starts by entering/verifying her phone, not the last customer's gallery.
+  kioskStarted=true;kioskActivity();
+  var tries=0,nextWait=setInterval(function(){if(state.pub){clearInterval(nextWait);openOtp(function(){go(1)})}else if(++tries>80){clearInterval(nextWait);toast('صفحه بارگذاری نشد. دوباره تلاش کنید','error')}},150);
+ }else welcomeFlow({kiosk:true});
 }
 // Live camera with a standing guide and a 3-2-1 countdown, so the full-length photo is taken in front of the screen.
 var SIL_SVG='<svg viewBox="0 0 200 440" aria-hidden="true"><ellipse class="sil" cx="100" cy="40" rx="19" ry="23"/><path class="sil" d="M92 62 L92 74 C78 78 62 84 58 100 C55 118 66 150 76 176 C70 220 52 330 30 428 L170 428 C148 330 130 220 124 176 C134 150 145 118 142 100 C138 84 122 78 108 74 L108 62 Z"/></svg>';
