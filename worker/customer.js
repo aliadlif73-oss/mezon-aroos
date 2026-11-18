@@ -2566,8 +2566,11 @@ function openQR(job,what,extra){
  }).catch(function(e){box.replaceChildren(notice('danger',(e&&e.message&&e.message!=='درخواست معتبر نیست')?e.message:'ساخت لینک ممکن نشد؛ یک بار دیگر امتحان کن'))});
 }
 function kioskReset(){
- var done=function(){try{localStorage.clear()}catch(e){}try{sessionStorage.clear()}catch(e){}location.replace(location.pathname+'?kiosk=1'+(state.tag?'&r='+encodeURIComponent(state.tag):''))};
- api('erase',{v:VISITOR}).then(done,done);
+ if(kioskReset.busy)return;kioskReset.busy=true;
+ api('finish',{v:VISITOR}).then(function(){
+  try{localStorage.clear()}catch(e){}try{sessionStorage.clear()}catch(e){}
+  location.replace(location.pathname+'?kiosk=1&next=1'+(state.tag?'&r='+encodeURIComponent(state.tag):''));
+ }).catch(function(e){kioskReset.busy=false;toast('پایان پرو انجام نشد؛ برای حفظ حریم خصوصی دوباره تلاش کنید: '+(e.message||''),'error')});
 }
 var kioskIdle=0,kioskWarnEl=null,kioskWarnT=0,kioskStarted=false;
 function kioskActivity(){if(!kioskStarted||kioskWarnEl)return;clearTimeout(kioskIdle);kioskIdle=setTimeout(kioskWarn,90000)}
@@ -2591,13 +2594,16 @@ function kioskBoot(){
  document.documentElement.classList.add('kiosk');
  document.addEventListener('contextmenu',function(e){e.preventDefault()});
  ['pointerdown','keydown','touchstart','wheel'].forEach(function(ev){document.addEventListener(ev,kioskActivity,{passive:true})});
- var end=el('button',{class:'kend',type:'button',text:'پایان و پاک کردن عکس‌ها',onclick:function(){
-  var box=el('div',{class:'kov'},[el('div',{class:'kov__card'},[h('h2','پایان؟'),h('p','عکس‌های تو از روی این دستگاه پاک می‌شود. اگر لینک عکس را نگرفته‌ای، دیگر نمی‌توانی ببینی‌اش.'),el('button',{class:'btn btn--primary',type:'button',text:'بله، پاک کن',onclick:kioskReset}),el('button',{class:'btn btn--ghost',type:'button',text:'برگرد',onclick:function(){box.remove()}})])]);
+ var end=el('button',{class:'kend',type:'button',text:'پایان پرو',onclick:function(){
+  var box=el('div',{class:'kov'},[el('div',{class:'kov__card'},[h('h2','پایان پرو این مشتری؟'),h('p','تصاویر موقت و دسترسی این نشست بسته می‌شود و صفحه برای ثبت شماره مشتری بعدی آماده خواهد شد. تصاویر ارسالی به مزون مطابق سیاست نگهداری حفظ می‌شوند.'),el('button',{class:'btn btn--primary',type:'button',text:'پایان پرو و مشتری بعدی',onclick:kioskReset}),el('button',{class:'btn btn--ghost',type:'button',text:'برگرد',onclick:function(){box.remove()}})])]);
   document.body.append(box);
  }});
  document.body.append(end);
- var name=(document.title||'').split('|')[0].trim();
- welcomeFlow({kiosk:true});
+ if(/[?&]next=1(?:&|$)/.test(location.search)){
+  // Finish fitting: next customer starts by entering/verifying her phone, not the last customer's gallery.
+  kioskStarted=true;kioskActivity();
+  var tries=0,nextWait=setInterval(function(){if(state.pub){clearInterval(nextWait);openOtp(function(){go(1)})}else if(++tries>80){clearInterval(nextWait);toast('صفحه بارگذاری نشد. دوباره تلاش کنید','error')}},150);
+ }else welcomeFlow({kiosk:true});
 }
 // Live camera with a standing guide and a 3-2-1 countdown, so the full-length photo is taken in front of the screen.
 var SIL_SVG='<svg viewBox="0 0 200 440" aria-hidden="true"><ellipse class="sil" cx="100" cy="40" rx="19" ry="23"/><path class="sil" d="M92 62 L92 74 C78 78 62 84 58 100 C55 118 66 150 76 176 C70 220 52 330 30 428 L170 428 C148 330 130 220 124 176 C134 150 145 118 142 100 C138 84 122 78 108 74 L108 62 Z"/></svg>';
