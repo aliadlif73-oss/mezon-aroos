@@ -92,12 +92,8 @@ export async function newLinkCode(db,salon,env){
 }
 
 const help=(name,sms,P)=>'<b>راهنمای مدیر مزون'+(name?' — '+esc(name):'')+'</b>\n\n'+
- '<b>📥 درخواست مشتری</b>\nهر مشتری که بدون لینک یک مزون‌دار بیاید و عکس و مدلش را بفرستد، همین‌جا با اسم و شماره می‌آید. بعد از تماس یکی از دکمه‌ها را بزنید: «📞 تماس گرفتم»، «✅ نوبت دادم» یا «🚫 بسته شد». مشتری هم خبردار می‌شود. اگر دکمه‌ای نزنید، بعد از ۲ و ۲۴ ساعت یادآوری می‌آید.\n'+
- 'زیر درخواست‌ها دکمهٔ «👤 بده به …» هم هست: با آن درخواست را به یکی از مزون‌دارها می‌دهید و از آن به بعد آن مشتری (و هر کس که او بیاورد) مال همان مزون‌دار است.\n'+
- 'مشتری‌هایی که با لینک یک مزون‌دار آمده‌اند فقط به خود او می‌رسند. اگر مشتری یک مزون‌دار با لینک مزون‌دار دیگری بیاید، یک پیام کوتاه می‌گیرید که اگر خواستید جابه‌جایش کنید.\n\n'+
- '<b>🖼 نمونه‌کار</b>\nعکس را همین‌جا بفرستید و زیرش (کپشن) اسم کار را بنویسید، مثلاً «پرنسسی پفی دانتل» یا «ماهی ساده یقه هفت». عکس لباس را تک‌عکس و واضح بفرستید؛ لباس روی مانکن یا آویز، تمام‌قد و با نور خوب، تا مشتری همان لباس را روی خودش ببیند. هر لباس را از ۴ زاویه بفرستید: روبه‌رو، از کنار، از پشت و یک نمای نزدیک از جزئیات. همهٔ عکس‌ها را یک‌جا (آلبوم) بفرستید و کپشن را روی یکی بنویسید؛ آلبوم یک لباس حساب می‌شود و ترتیب عکس‌ها (اولی = روبه‌رو) مهم است. عکس بلافاصله روی صفحهٔ مزون می‌نشیند. با فرستادن عکس تأیید می‌کنید اجازهٔ انتشارش را دارید.\n\n'+
- '<b>📲 لینک برای مشتری</b>\nشمارهٔ موبایل مشتری را بنویسید (مثلاً ۰۹۱۲۱۲۳۴۵۶۷، تا ۵ شماره با فاصله)'+(sms?' تا لینک مزون برایش پیامک شود.':'. دکمه‌هایی می‌آید که لینک را با واتساپ، تلگرام، پیامک از گوشی خودتان، بله یا دایرکت اینستاگرام برایش بفرستید. /share همین دکمه‌ها را بدون شماره می‌دهد.')+'\n\n'+
- '<b>دستورها</b>\n/share فرستادن لینک برای مشتری با پیام‌رسان\n/team تیم مزون: افزودن و حذف مزون‌دار، لینک دعوت و لینک اختصاصی هر نفر\n/link لینک اختصاصی خودتان (اگر خودتان هم کار می‌کنید)\n/setup تکمیل یا تغییر اطلاعات صفحهٔ مزون (هر سؤال «رد شو» دارد)\n/list نمونه‌کارها، تغییر نام و حذف\n/customers مشتری‌ها و شماره تماس\n/find 09121234567 جستجوی شماره\n/requests فهرست و وضعیت درخواست‌ها\n/export فایل مشتری‌ها\n/balance اعتبار و درخواست شارژ\n/help همین راهنما';
+'<b>ثبت لباس</b>\n/newdress شروع ثبت: ۱) عکس جلو ۲) بغل راست ۳) بغل چپ ۴) پشت، هر عکس جداگانه. سپس نام مدل، انتخاب چند سایز و ثبت نهایی. /cancel لغو.\n\n'+
+'<b>مدیریت</b>\n/list نمونه‌کارها\n/team اعضا\n/customers مشتری‌ها\n/requests درخواست‌ها\n/find 09121234567 جستجو\n/export خروجی\n/balance اعتبار\n/help راهنما.\n\nتنظیمات مزون فقط از ادمین آینه انجام می‌شود؛ ارسال لینک مشتری از ربات غیرفعال است.';
 const ownerHelp='<b>گزارش‌های مزون آینه</b>\n\nاز این به بعد هشدارها همین‌جا می‌آید: مزون یا مزون‌داری که ربات را وصل کرد یا نکرد، صفحه‌ای که کامل یا نیمه‌کاره ماند، درخواستی که ۲۴ ساعت بی‌جواب ماند یا گیر کرد، و خطاهای ربات. هر شب ساعت ۲۱ هم خلاصهٔ روز می‌آید.\n\n/report خلاصهٔ همین الان';
 async function salonByChat(db,p,chat){return one(db,'SELECT * FROM salons WHERE '+PLATFORMS[p].col+'=?',String(chat))}
 // Who is writing: the salon's manager chat, or a team member's chat (manager wins if both).
@@ -108,13 +104,7 @@ export async function actorByChat(db,p,chat){
  return {salon:await one(db,'SELECT * FROM salons WHERE id=?',staff.salon_id),staff,role:'staff'};
 }
 const refUrl=(origin,salon,t)=>origin+'/s/'+salon.slug+'?r='+t.ref_code;
-const staffHelp=(t,salon,origin,sms)=>'<b>'+esc(t.name)+' — تیم «'+esc(salon.name)+'»</b>\n\n'+
- '<b>🔗 لینک اختصاصی تو</b>\n'+refUrl(origin,salon,t)+'\n'+
- 'این لینک را برای مشتری‌ها و دوستانت بفرست (تلگرام، واتساپ، استوری…). هر کس با این لینک بیاید، و هر کس که او لینک را برایش بفرستد، برای همیشه مشتری تو حساب می‌شود و درخواستش فقط به خودت می‌رسد.\n\n'+
- '<b>📥 درخواست مشتری‌هایت</b>\nهمین‌جا با عکس قبل و بعد، اسم و شماره می‌آید. بعد از تماس یکی از دکمه‌ها را بزن («📞 تماس گرفتم»، «✅ نوبت دادم»، «🚫 بسته شد») تا مشتری خبردار شود.\n\n'+
- '<b>🖼 نمونه‌کار</b>\nعکس کارت را بفرست و زیرش اسم کار را بنویس (مثلاً «پرنسسی پفی دانتل»). با اسم تو روی صفحهٔ مزون می‌نشیند و مشتری‌هایت اول کارهای تو را می‌بینند. برای حذف، /list را بزن.\n\n'+
- '<b>📲 فرستادن لینک برای مشتری</b>\nشمارهٔ موبایل مشتری را بنویس (تا ۵ شماره با فاصله)'+(sms?' تا لینک اختصاصی تو برایش پیامک شود.':'. دکمه‌هایی می‌آید که لینک اختصاصی‌ات را با واتساپ، تلگرام، پیامک از گوشی خودت، بله یا دایرکت اینستاگرام برایش بفرستی.')+'\n\n'+
- '/share فرستادن لینک با پیام‌رسان\n/link لینک اختصاصی من\n/list نمونه‌کارهای من و حذف\n/requests درخواست‌های خودم\n/customers مشتری‌های خودم\n/help همین راهنما';
+const staffHelp=(t,salon,origin,sms)=>'<b>'+esc(t.name)+' — '+esc(salon.name)+'</b>\n/newdress ثبت چهار عکس (جلو، بغل راست، بغل چپ، پشت)، نام مدل و انتخاب سایزها\n/cancel انصراف\n/list نمونه‌کارها\n/requests درخواست‌ها\n/customers مشتری‌ها\n/help راهنما.\n\nارسال لینک مشتری غیرفعال است.';
 // One-time invite for a member (same code format as the salon link, kept on the member's row).
 export async function staffInvite(db,env,t){
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(12)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -166,13 +156,18 @@ async function handle(req,env,p,exec){
   if(textIn==='/export'){await exportCustomers(ctx);return J({ok:true})}
   if(textIn==='/balance'){await sendBalance(ctx);return J({ok:true})}
   if(textIn.startsWith('/find ')){await findCustomer(ctx,textIn.slice(6));return J({ok:true})}
-  if(textIn==='/link'){await managerLink(ctx);return J({ok:true})}
+  if(textIn==='/link'&&botOnly(env)){await ctx.say('ارسال لینک مشتری غیرفعال است.');return J({ok:true})}
+   if(textIn==='/link'){await managerLink(ctx);return J({ok:true})}
   if(textIn==='/team'){await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);await sendTeam(ctx);return J({ok:true})}
   if(textIn==='/help'){await ctx.say(help(salon.name,inviteReady(env),PLATFORMS[p]),{parse_mode:'HTML'});return J({ok:true})}
   if(textIn==='/list'){await sendList(ctx);return J({ok:true})}
-  if(textIn==='/share'){await shareInvites(ctx,[],ctx.staff);return J({ok:true})}
-  if(textIn==='/setup'){await wizardStart(ctx,0);return J({ok:true})}
+  if(textIn==='/share'&&botOnly(env)){await ctx.say('ارسال لینک مشتری غیرفعال است.');return J({ok:true})}
+   if(textIn==='/share'){await shareInvites(ctx,[],ctx.staff);return J({ok:true})}
+  if(textIn==='/setup'&&botOnly(env)){await ctx.say('تنظیمات مزون فقط در ادمین آینه انجام می‌شود.');return J({ok:true})}
+   if(textIn==='/setup'){await wizardStart(ctx,0);return J({ok:true})}
   let state=parse(salon.bot_state);
+   if(botOnly(env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return J({ok:true})}
+   if(botOnly(env)&&state.dressUpload&&state.chat===ctx.chat&&state.p===p){await dressReply(ctx,state,m,textIn);return J({ok:true})}
   const photo=photoOf(m);
   // An unfinished question older than 20 minutes no longer captures messages.
   if(state.p&&(!state.ts||Date.now()-state.ts>STALE)){await expireState(env,salon,state,ctx);state={}}
@@ -187,11 +182,11 @@ async function handle(req,env,p,exec){
    await run(db,'UPDATE portfolio SET title=? WHERE id=? AND salon_id=?',nm,state.dress,salon.id);await ctx.say('✅ اسم لباس شد «'+esc(nm)+'».');return J({ok:true});
   }
   if(state.p===p&&state.team&&!photo){await teamAnswer(ctx,state,textIn);return J({ok:true})}
-  const numbers=mobilesIn(textIn);
+  const numbers=botOnly(env)?[]:mobilesIn(textIn);
   if(numbers.length){if(inviteReady(env))await sendInvites(env,db,salon,ctx.chat,numbers,ctx.say);else await shareInvites(ctx,numbers,ctx.staff);return J({ok:true})}
-  if(photo){await addPortfolio(ctx,photo,m.caption||'',m.media_group_id,m.message_id);return J({ok:true})}
+  if(photo){if(botOnly(env))await ctx.say('ابتدا /newdress را بزنید.');else await addPortfolio(ctx,photo,m.caption||'',m.media_group_id,m.message_id);return J({ok:true})}
   if(await supportMessage(ctx,m,textIn,ctx.owner?'owner':'manager'))return J({ok:true});
-  await ctx.say('برای اضافه‌کردن نمونه‌کار، عکس بفرستید'+' و برای فرستادن لینک مزون به مشتری، شمارهٔ موبایلش را بنویسید. /help راهنما را نشان می‌دهد.');
+  await ctx.say(botOnly(env)?'برای ثبت لباس /newdress و راهنما /help را بزنید.':'برای افزودن نمونه‌کار عکس بفرستید.');
   return J({ok:true});
  }catch(e){
   // Always 200 so a bad update is not redelivered forever. The sender is told what went wrong in
@@ -341,17 +336,20 @@ async function linkStaff(ctx,t){
 }
 async function staffMessage(ctx,m,textIn){
  const t=ctx.staff;
- if(textIn==='/help'||textIn==='/link'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
+ if(textIn==='/help'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
+  if(botOnly(ctx.env)&&['/link','/share','/setup'].includes(textIn)){await ctx.say('این قابلیت غیرفعال است؛ تنظیمات فقط از ادمین آینه انجام می‌شوند.');return}
+  if(botOnly(ctx.env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return}
+  const draft=parse(ctx.salon.bot_state);if(botOnly(ctx.env)&&draft.dressUpload&&draft.chat===ctx.chat&&draft.p===ctx.p){await dressReply(ctx,draft,m,textIn);return}
  if(textIn==='/list'){await sendList(ctx);return}
  if(textIn==='/requests'){await sendRequests(ctx);return}
  if(textIn==='/customers'){await sendCustomers(ctx);return}
- const numbers=mobilesIn(textIn);
+ const numbers=botOnly(ctx.env)?[]:mobilesIn(textIn);
  if(numbers.length){if(inviteReady(ctx.env))await sendInvites(ctx.env,ctx.db,ctx.salon,ctx.chat,numbers,ctx.say,t);else await shareInvites(ctx,numbers,t);return}
- if(textIn==='/share'){await shareInvites(ctx,[],t);return}
+ if(textIn==='/share'&&!botOnly(ctx.env)){await shareInvites(ctx,[],t);return}
  const photo=photoOf(m);
- if(photo){await addPortfolio(ctx,photo,m.caption||'',m.media_group_id,m.message_id);return}
+ if(photo){if(botOnly(ctx.env))await ctx.say('ابتدا /newdress را بزن.');else await addPortfolio(ctx,photo,m.caption||'',m.media_group_id,m.message_id);return}
  if(await supportMessage(ctx,m,textIn,'staff'))return;
- await ctx.say('برای نمونه‌کار، عکس کارت را بفرست و زیرش اسم کار را بنویس.'+' برای فرستادن لینک اختصاصی‌ات به مشتری، شماره‌اش را بنویس.'+'\n/share فرستادن لینک · /link لینک اختصاصی · /list نمونه‌کارها · /help راهنما');
+ await ctx.say('برای ثبت لباس /newdress را بزن.');
 }
 const teamLine=(t,i)=>fa(i+1)+'. <b>'+esc(t.name)+'</b>'+(t.is_manager?' (خودِ مدیر)':'')+(t.specialty&&!t.is_manager?' — '+esc(t.specialty):'')+' · '+(t.telegram_chat_id||t.bale_chat_id?'✅ وصل':'⏳ هنوز وصل نشده');
 async function sendTeam(ctx){
@@ -555,6 +553,7 @@ async function onCallback(ctx,q){
  try{
   if(!salon)note='این گفتگو به مزونی وصل نیست';
   else if(data==='noop')note='ثبت شده';
+   else if(data==='du:new'){await beginDress(ctx);note='ثبت لباس'}
   else if(data.startsWith('cu:p:')){await sendCustomers(ctx,data.slice(5));note='فهرست مشتری‌ها'}
   else if(data.startsWith('cu:d:')){await showCustomer(ctx,data.slice(5));note='پرونده مشتری'}
   else if(data.startsWith('cr:p:')){await sendRequests(ctx,data.slice(5));note='فهرست درخواست‌ها'}
@@ -572,6 +571,7 @@ async function onCallback(ctx,q){
       try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:sizeKeyboard(dress.id,next)})}catch(e){await ctx.say('سایزهای فعلی «'+dress.title+'»:',{reply_markup:sizeKeyboard(dress.id,next)})}
       note='سایز '+SIZE_LABEL(size)+(next.includes(size)?' انتخاب شد':' حذف شد');
     }else{note=chosen.length?'سایزهای «'+dress.title+'»: '+chosen.map(SIZE_LABEL).join('، '):'سایزی مشخص نشده';
+       const st=parse(salon.bot_state);if(st.dressUpload?.id===dress.id&&st.p===p&&st.chat===chat)await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);
       await ctx.say('✅ '+note);
       try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:{inline_keyboard:[]}})}catch(e){}
     }
@@ -611,7 +611,8 @@ async function onCallback(ctx,q){
     }
    }
   }
-  else if(data.startsWith('wz:')&&!manager)note='فقط مدیر مزون';
+  else if(data.startsWith('wz:')&&botOnly(env))note='تنظیمات فقط در ادمین آینه';
+   else if(data.startsWith('wz:')&&!manager)note='فقط مدیر مزون';
   else if(data==='wz:start')await wizardStart(ctx,0,true);
   else if(data==='wz:done'){const st=parse(salon.bot_state);if(!Number.isInteger(st.step))note='تنظیمات در جریان نیست';else{await wizardFinish(ctx,true);note='تمام شد'}}
   else if(data.startsWith('wz:')){
@@ -681,6 +682,50 @@ function sizeKeyboard(id,selected){
 }
 async function askDressSizes(ctx,id,title){
  await ctx.say('📏 سایزهای موجود برای «'+title+'» را انتخاب کنید. می‌توانید چند گزینه را فعال کنید؛ هر انتخاب همان لحظه ذخیره می‌شود. در پایان «ثبت سایزها» را بزنید.',{reply_markup:sizeKeyboard(id,[])});
+}
+
+
+const DRESS_ANGLES=['جلو','بغل راست','بغل چپ','پشت'];
+async function beginDress(ctx){
+ const state=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
+ if(state.dressUpload&&state.chat!==ctx.chat){await ctx.say('ثبت دیگری در مزون در جریان است.');return}
+ if(state.dressUpload){let x=state.dressUpload;await ctx.say(x.stage==='name'?'نام مدل را بفرستید.':x.stage==='sizes'?'سایزها را انتخاب کنید.':'عکس '+DRESS_ANGLES[x.images.length]+' را ارسال کنید.');if(x.stage==='sizes')await askDressSizes(ctx,x.id,x.name);return}
+ if(state.team||Number.isInteger(state.step)){await ctx.say('ابتدا فرآیند قبلی را پایان دهید.');return}
+ const draft={p:ctx.p,chat:ctx.chat,ts:Date.now(),dressUpload:{stage:'photos',images:[],staffId:ctx.role==='staff'?ctx.staff.id:null}};
+ await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify(draft),ctx.salon.id);
+ await ctx.say('📸 مرحله ۱/۴: عکس «جلو» را جداگانه بفرستید. سپس به‌ترتیب بغل راست، بغل چپ و پشت؛ بعد نام مدل و سایزها. /cancel انصراف');
+}
+async function cancelDress(ctx){
+ const s=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
+ if(!s.dressUpload||s.chat!==ctx.chat||s.p!==ctx.p){await ctx.say('ثبت فعالی ندارید.');return}
+ if(s.dressUpload.id)await run(ctx.db,'DELETE FROM portfolio WHERE id=? AND salon_id=?',s.dressUpload.id,ctx.salon.id);
+ await run(ctx.db,"UPDATE salons SET bot_state='' WHERE id=?",ctx.salon.id);
+ await ctx.say('ثبت لغو شد.');
+}
+async function dressReply(ctx,state,m,msg){
+ const x=state.dressUpload;
+ if(x.staffId!==(ctx.role==='staff'?ctx.staff.id:null)){await ctx.say('دسترسی این ثبت برای شما نیست.');return}
+ if(x.stage==='photos'){
+  const ph=photoOf(m);
+  if(!ph){await ctx.say('لطفاً عکس «'+DRESS_ANGLES[x.images.length]+'» را ارسال کنید.');return}
+  if(m.media_group_id){await ctx.say('عکس‌ها را جداگانه ارسال کنید؛ نه آلبوم.');return}
+  must((ph.file_size||0)<=5*1024*1024,'حجم عکس بیشتر از ۵ مگابایت است');
+  const media=await putImage(ctx.env,ctx.salon,null,await fileBytes(ctx.env,ctx.p,ph.file_id),'portfolio');
+  const images=[...x.images,media],stage=images.length===4?'name':'photos';
+  await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now(),dressUpload:{...x,images,stage}}),ctx.salon.id);
+  await ctx.say(stage==='name'?'✅ هر چهار عکس ثبت شد. نام مدل را بنویسید.':'✅ عکس «'+DRESS_ANGLES[images.length-1]+'» ذخیره شد. حالا «'+DRESS_ANGLES[images.length]+'» را بفرستید.');
+  return;
+ }
+ if(x.stage==='name'){
+  const name=text(String(msg||'').trim(),150);
+  if(name.length<2||name.startsWith('/')||/\d{4,}/.test(digits(name))){await ctx.say('نام مدل معتبر نیست.');return}
+  const id=uid();
+  await run(ctx.db,'INSERT INTO portfolio(id,salon_id,title,category,description,stylist,images,published,try_on,permission,created_at,staff_id,media_group,line) VALUES(?,?,?,?,?,?,?,1,1,1,?,?,?,?)',id,ctx.salon.id,name,CATEGORIES.find(z=>name.includes(z))||'','',ctx.role==='staff'?ctx.staff.name:'',JSON.stringify(x.images),Date.now(),x.staffId,null,'dress');
+  for(let i=0;i<4;i++)await run(ctx.db,'INSERT OR IGNORE INTO portfolio_imgs(portfolio_id,mid,media_id) VALUES(?,?,?)',id,i+1,x.images[i]);
+  await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now(),dressUpload:{...x,id,name,stage:'sizes'}}),ctx.salon.id);
+  await askDressSizes(ctx,id,name);return;
+ }
+ await ctx.say('سایزها را با دکمه‌های پیام قبلی انتخاب و ثبت نهایی کنید.');
 }
 
 const ANG=['روبه‌رو','پشت','نیم‌رخ راست','نیم‌رخ چپ'];
@@ -883,7 +928,7 @@ export async function remind(env,origin,now=Date.now()){
  return n;
 }
 
-export const BOT_COMMANDS=[{command:'start',description:'شروع و معرفی پلتفرم آینه'},{command:'welcome',description:'نمایش دوبارهٔ معرفی و منو'},{command:'help',description:'راهنما'}];
+export const BOT_COMMANDS=[{command:'start',description:'شروع آینه'},{command:'newdress',description:'ثبت لباس و چهار زاویه'},{command:'cancel',description:'انصراف از ثبت لباس'},{command:'help',description:'راهنما'}];
 export const BOT_DESCRIPTION='پلتفرم آینه، پرو مجازی لباس عروس برای مزون‌ها. عروس لباس‌های واقعی مزون را در حدود یک دقیقه روی عکس خودش می‌بیند و نتیجه را برای مزون می‌فرستد. برای شروع /start را بزنید.';
 export const BOT_SHORT_DESCRIPTION='پرو مجازی لباس عروس برای مزون‌ها';
 // Safe to repeat: every call just sets the same values. One failure never blocks the others (Bale may lack some methods).
