@@ -4,7 +4,7 @@ import {phone} from '../worker/domain.js';import {appHTML} from '../worker/ui.js
 
 const origin='https://test.example';
 const migrations=readdirSync(new URL('../drizzle/',import.meta.url)).filter(f=>f.endsWith('.sql')).sort();
-function fixture(){const DB=database();for(const f of migrations)DB.sql.exec(readFileSync(new URL('../drizzle/'+f,import.meta.url),'utf8'));return {DB,BUCKET:memoryBucket(),OWNER_EMAIL:'owner@test',JOB_TOKEN:'job-test',TRUST_PLATFORM_IDENTITY:'true'};}
+function fixture(){const DB=database();for(const f of migrations)DB.sql.exec(readFileSync(new URL('../drizzle/'+f,import.meta.url),'utf8'));return {DB,BUCKET:memoryBucket(),OWNER_EMAIL:'owner@test',JOB_TOKEN:'job-test',TRUST_PLATFORM_IDENTITY:'true',SALON_MANAGEMENT_MODE:'legacy'};}
 const OWNER={user:'owner-a',email:'owner@test'};
 async function call(env,path,body,{cookie='',user='',email='',headers:extra={}}={}){const headers={origin,'oai-authenticated-user-id':user,'oai-authenticated-user-email':email,cookie,...extra};let payload;if(body!==undefined){if(body instanceof Uint8Array){payload=body}else{headers['content-type']='application/json';payload=JSON.stringify(body)}}const res=await app.fetch(new Request(origin+path,{method:body===undefined?'GET':'POST',headers,body:payload}),env);let d;try{d=await res.json()}catch{d=null}return {status:res.status,data:d,cookie:res.headers.get('set-cookie')?.split(';')[0]};}
 async function salon(env,slug='salon-a'){const r=await call(env,'/api/salons',{slug,name:'مزون '+slug},OWNER);assert.equal(r.status,200,JSON.stringify(r));env.DB.sql.prepare("UPDATE salons SET settings=json_set(COALESCE(settings,'{}'),'$.catalog',json('true')) WHERE slug=?").run(slug);return {id:r.data.id,slug};}
