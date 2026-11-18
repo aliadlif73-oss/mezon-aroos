@@ -337,7 +337,7 @@ test('setWebhook sets commands, description, short description and the menu butt
  try{
   const {setWebhook,BOT_DESCRIPTION,BOT_SHORT_DESCRIPTION}=await import('../worker/telegram.js');
   await setWebhook(env,origin);await setWebhook(env,origin);
-  assert.deepEqual(bots.last('setMyCommands').commands.map(c=>c.command),['start','welcome','help']);
+  assert.deepEqual(bots.last('setMyCommands').commands.map(c=>c.command),['start','newdress','cancel','help']);
   assert(bots.last('setMyCommands').commands.every(c=>/[\u0600-\u06FF]/.test(c.description)));
   assert.equal(bots.last('setMyDescription').description,BOT_DESCRIPTION);assert(BOT_DESCRIPTION.length<=512);
   assert.equal(bots.last('setMyShortDescription').short_description,BOT_SHORT_DESCRIPTION);assert(BOT_SHORT_DESCRIPTION.length<=120);
