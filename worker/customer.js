@@ -9,19 +9,23 @@ import {freshDemoCSS} from './ayneh-theme.js';
 
 const customerCSS=String.raw`
 
-/* DEFAULT for all /s/:slug pages: Royal-style horizontal banner, ONLY cover + logo + name. */
-.salon-brand{width:100%;overflow:hidden;border:1px solid #e9e0d3;border-radius:19px;background:#fffaf5;box-shadow:0 13px 32px -27px rgba(65,42,23,.38)}
-.salon-brand__cover{position:relative;height:clamp(108px,29vw,152px);background:linear-gradient(115deg,#e6dbcb,#f7f0e6);overflow:hidden}
-.salon-brand__cover>img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 47%}
-.salon-brand__cover:not(.skel)::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(0deg,rgba(61,45,23,.10),transparent 40%)}
-.salon-brand__identity{position:relative;display:flex;align-items:center;gap:12px;min-height:72px;padding:10px 16px;background:#fffaf5}
-.salon-brand__logo{position:relative;z-index:1;display:grid;place-items:center;flex:none;width:64px;height:64px;margin-top:-28px;border-radius:50%;border:3px solid #fffaf5;outline:1px solid #d7be91;background:#fffdfa;overflow:hidden;box-shadow:0 6px 17px -10px rgba(59,38,23,.4)}
-.salon-brand__logo-img{width:100%;height:100%;object-fit:contain}
-.salon-brand__logo-letter{font-family:var(--display);font-size:29px;font-weight:800;color:#967547;line-height:1}
-.salon-brand__name{margin:0;min-width:0;flex:1;font-family:var(--display);font-size:clamp(20px,4.6vw,27px);font-weight:800;line-height:1.4;color:#443428;white-space:nowrap;overflow:hidden;text-align:start}
+/* DEFAULT for all /s/:slug pages: edge-to-edge, frameless, fade-out bridal salon header.
+   IMPORTANT: this block styles ONLY the cover, logo and name at #head.
+   Do not change the step navigation (#steps) or any content below it. */
+#head.hero{margin:0;padding:0;background:#faf8f4}
+#head.hero>.wrap{width:100%;max-width:none;padding:0}
+.salon-brand{width:100%;overflow:hidden;border:0;border-radius:0;background:#faf8f4;box-shadow:none}
+.salon-brand__cover{position:relative;height:clamp(208px,58vw,320px);border:0;border-radius:0;background:linear-gradient(115deg,#e6dbcb,#f7f0e6);overflow:hidden}
+.salon-brand__cover>img{display:block;width:100%;height:100%;object-fit:cover;object-position:center 44%}
+.salon-brand__cover:not(.skel)::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(250,248,244,0) 34%,rgba(250,248,244,.16) 54%,rgba(250,248,244,.82) 82%,#faf8f4 100%)}
+.salon-brand__identity{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-top:-72px;min-height:0;padding:0 16px 24px;background:transparent;text-align:center}
+.salon-brand__logo{position:relative;z-index:1;display:grid;place-items:center;flex:none;width:88px;height:88px;margin:0;border-radius:50%;border:3px solid #fffaf5;outline:1px solid #d7be91;background:#fffdfa;overflow:hidden;box-shadow:0 7px 22px -14px rgba(59,38,23,.42)}
+.salon-brand__logo-img{display:block;width:100%;height:100%;object-fit:contain}
+.salon-brand__logo-letter{font-family:var(--display);font-size:32px;font-weight:800;color:#967547;line-height:1}
+.salon-brand__name{margin:0;min-width:0;max-width:100%;flex:none;font-family:var(--display);font-size:clamp(27px,7.2vw,36px);font-weight:850;line-height:1.45;color:#175539;white-space:nowrap;overflow:hidden;text-align:center}
 .salon-brand__name.is-wrapped{white-space:normal;overflow-wrap:anywhere}
-@media(max-width:480px){.salon-brand{border-radius:17px}.salon-brand__cover{height:clamp(104px,29vw,128px)}.salon-brand__identity{min-height:68px;padding:10px 13px;gap:11px}.salon-brand__logo{width:58px;height:58px;margin-top:-24px}.salon-brand__name{font-size:21px}}
-@media(min-width:760px){.salon-brand__cover{height:190px}.salon-brand__identity{min-height:80px;padding:12px 24px;gap:17px}.salon-brand__logo{width:77px;height:77px;margin-top:-30px}.salon-brand__name{font-size:27px}}
+@media(max-width:360px){.salon-brand__cover{height:205px}.salon-brand__identity{margin-top:-67px;padding-bottom:18px}.salon-brand__logo{width:78px;height:78px}.salon-brand__name{font-size:27px}}
+@media(min-width:760px){.salon-brand__cover{height:clamp(300px,35vw,420px)}.salon-brand__identity{margin-top:-92px;gap:10px;padding-bottom:30px}.salon-brand__logo{width:108px;height:108px}.salon-brand__name{font-size:38px}}
 
 .hd{position:relative;display:grid;grid-template-columns:1fr;grid-template-rows:auto auto;align-content:center;justify-items:center;gap:22px;margin:12px 0 6px;min-height:clamp(300px,50vh,460px);padding:34px 20px;border-radius:var(--r-lg);overflow:hidden;border:1px solid rgba(201,165,92,.45);background:radial-gradient(70% 120% at 85% 0,rgba(255,255,255,.95),transparent 62%),radial-gradient(60% 100% at 10% 100%,rgba(232,217,176,.55),transparent 70%),linear-gradient(135deg,#f7f3ec,#e9efec);box-shadow:var(--lift)}
 .hd::before{content:"";position:absolute;inset:7px;border-radius:calc(var(--r-lg) - 6px);border:1px solid rgba(201,165,92,.35);pointer-events:none}
