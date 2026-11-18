@@ -35,3 +35,18 @@ test('QR upload lands in this visitor session, photo is checked, polling stops o
  assert.match(html,/function acceptPhoto\(id\)/);
  assert.match(PHOTO_CHECK_JS,/function checkPhoto\(img\)/);
 });
+
+
+test('finish fitting is available for every screen size and advances to a fresh customer',()=>{
+ const html=customerHTML;
+ assert.match(html,/finishFittingControl\(\);\s*if\(KIOSK\)kioskBoot\(\)/);
+ assert.match(html,/function finishFittingControl\(\)/);
+ assert.match(html,/text:'پایان پرو'/);
+ assert.match(html,/text:'پایان پرو و مشتری بعدی'/);
+ assert.match(html,/api\('finish',\{v:VISITOR\}\)/);
+ assert.match(html,/location\.replace\(location\.pathname\+'\?next=1'/);
+ assert.doesNotMatch(html,/location\.replace\(location\.pathname\+'\?kiosk=1&next=1'/);
+ assert.match(html,/if\(!nextCustomerFlow\(\)\)welcomeFlow\(\{kiosk:true\}\)/);
+ assert.match(html,/else if\(!nextCustomerFlow\(\)&&DESK/);
+ assert.match(html,/openOtp\(function\(\)\{go\(1\)\}\)/);
+});
