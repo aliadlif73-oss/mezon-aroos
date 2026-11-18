@@ -56,7 +56,8 @@ export const MENU_HINT='از منوی زیر ادامه دهید.';
 export const BTN={login:'ورود مدیر ◂',panel:'پنل مدیریت من ◂',register:'ثبت‌نام مزون‌دار ↗',guide:'راهنمای خرید ◂',demo:'مشاهده دمو ↗',site:'سایت آینه ↗',demoOnly:'مشاهده دمو ↗',back:'▸ منوی اصلی',cancel:'انصراف',share:'تأیید شمارهٔ من'};
 const url=(origin,path='')=>String(origin||'').replace(/\/+$/,'')+path;
 // Primary action full width (Telegram paints style:'primary' blue; unsupported -> call() resends without it), secondary in pairs.
-export const mainKeyboard=(origin,panel=false)=>{
+export const mainKeyboard=(origin,panel=false,botOnly=false)=>{
+ if(botOnly)return {inline_keyboard:[[{text:'مشاهده دمو ↗',url:url(origin,'/s/demo')}],[{text:'سایت آینه ↗',url:url(origin,'/')}]]};
  const reg={text:BTN.register,url:url(origin,'/register'),style:'primary'},guide={text:BTN.guide,callback_data:'ob:guide'},demo={text:BTN.demo,url:url(origin,'/s/demo')};
  return {inline_keyboard:panel
   ?[[{text:BTN.panel,callback_data:'ob:panel',style:'success'}],[reg],[guide,demo]]
