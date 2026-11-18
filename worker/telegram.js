@@ -554,6 +554,24 @@ async function onCallback(ctx,q){
  try{
   if(!salon)note='این گفتگو به مزونی وصل نیست';
   else if(data==='noop')note='ثبت شده';
+  else if(data.startsWith('cu:p:')){await sendCustomers(ctx,data.slice(5));note='فهرست مشتری‌ها'}
+  else if(data.startsWith('cu:d:')){await showCustomer(ctx,data.slice(5));note='پرونده مشتری'}
+  else if(data.startsWith('cr:p:')){await sendRequests(ctx,data.slice(5));note='فهرست درخواست‌ها'}
+  else if(data.startsWith('cr:d:')){await showRequest(ctx,data.slice(5));note='جزئیات درخواست'}
+  else if(data.startsWith('rc:')){if(!manager)note='فقط مدیر مزون';else{const amount=Number(data.slice(3));if(!PACKS.includes(amount))note='بسته نامعتبر است';else{await requestRecharge(db,env,salon,{amount});note='درخواست شارژ ثبت شد';await ctx.say('✅ درخواست شارژ '+fa(amount)+' اعتبار ثبت شد. تیم آینه آن را بررسی می‌کند.')}}}
+  else if(data.startsWith('rn:')){const id=data.slice(3),dress=manager&&/^[a-f0-9-]{36}$/.test(id)&&await one(db,'SELECT id,title FROM portfolio WHERE id=? AND salon_id=? AND published=1',id,salon.id);if(dress){await run(db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({p:ctx.p,dress:id,ts:Date.now()}),salon.id);await ctx.say('✏️ نام جدید «'+dress.title+'» را به‌صورت یک پیام متنی بفرست.');note='منتظر نام جدید'}else note='اجازه تغییر این لباس را ندارید'}
+  else if(data.startsWith('del:')&&botOnly(env)){
+   const id=data.slice(4),dress=/^[a-f0-9-]{36}$/.test(id)&&await one(db,'SELECT title FROM portfolio WHERE id=? AND salon_id=?'+(manager?'':' AND staff_id=?'),id,salon.id,...(manager?[]:[ctx.staff.id]));
+   if(!dress)note='لباس پیدا نشد یا اجازه حذف ندارید';
+   else{await ctx.say('حذف «'+dress.title+'» از کاتالوگ مزون؟ این کار باعث می‌شود لباس از صفحه مشتری حذف شود.',{reply_markup:{inline_keyboard:[[{text:'بله، حذف شود',callback_data:'dx:'+id},{text:'انصراف',callback_data:'noop'}]]}});note='نیازمند تأیید'}
+  }
+  else if(data.startsWith('dx:')){
+   const id=data.slice(3);
+   if(/^[a-f0-9-]{36}$/.test(id)){
+    const del=manager?await run(db,'DELETE FROM portfolio WHERE id=? AND salon_id=?',id,salon.id):await run(db,'DELETE FROM portfolio WHERE id=? AND salon_id=? AND staff_id=?',id,salon.id,ctx.staff.id);
+    note=del.meta.changes?'لباس حذف شد':'لباس پیدا نشد';try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:{inline_keyboard:[]}})}catch{}
+   }
+  }
   else if(data.startsWith('del:')){const id=data.slice(4);if(/^[a-f0-9-]{36}$/.test(id)){const r=manager?await run(db,'DELETE FROM portfolio WHERE id=? AND salon_id=?',id,salon.id):await run(db,'DELETE FROM portfolio WHERE id=? AND salon_id=? AND staff_id=?',id,salon.id,ctx.staff.id);note=r.meta.changes?'از صفحهٔ مزون حذف شد':'قبلاً حذف شده بود'}}
   else if(data.startsWith('pl:')){ctx.role=actor.role;await sendList(ctx,Math.max(0,Number(data.slice(3))||0));note='صفحهٔ بعد'}
   else if(data.startsWith('tm:')){note=manager?await teamCallback(ctx,data,q):'فقط مدیر مزون'}
@@ -671,7 +689,7 @@ async function sendList(ctx,offset=0){
  const own=ctx.role==='staff',PAGE=10;
  const items=own?await all(ctx.db,'SELECT id,title FROM portfolio WHERE salon_id=? AND staff_id=? AND published=1 ORDER BY created_at DESC LIMIT ? OFFSET ?',ctx.salon.id,ctx.staff.id,PAGE+1,offset):await all(ctx.db,'SELECT id,title FROM portfolio WHERE salon_id=? AND published=1 ORDER BY created_at DESC LIMIT ? OFFSET ?',ctx.salon.id,PAGE+1,offset);
  if(!items.length&&!offset){await ctx.say('هنوز نمونه‌کاری '+(own?'از تو ':'')+'روی صفحه نیست. یک عکس بفرست و زیرش اسم کار را بنویس.');return}
- const rows=items.slice(0,PAGE).map(x=>[{text:'🗑 '+x.title.slice(0,40),callback_data:'del:'+x.id}]);
+ const rows=items.slice(0,PAGE).map(x=>own?[{text:'🗑 '+x.title.slice(0,34),callback_data:'del:'+x.id}]:[{text:'✏️ '+x.title.slice(0,28),callback_data:'rn:'+x.id},{text:'🗑 حذف',callback_data:'del:'+x.id}]);
  const nav=[];if(offset>0)nav.push({text:'→ قبلی',callback_data:'pl:'+Math.max(0,offset-PAGE)});if(items.length>PAGE)nav.push({text:'بعدی ←',callback_data:'pl:'+(offset+PAGE)});if(nav.length)rows.push(nav);
  await ctx.say((own?'نمونه‌کارهای تو':'نمونه‌کارهای روی صفحه')+(offset?' (از '+fa(offset+1)+')':'')+'. برای حذف، روی هر کدام بزن:',{reply_markup:{inline_keyboard:rows}});
 }
