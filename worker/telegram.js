@@ -22,8 +22,10 @@ import {setLeadStatus} from './dresses.js';
 import {notifyOwner,linkOwner,isOwnerChat,sendDigest,setupStatus} from './alerts.js';
 import {newSession} from './server.js';
 import {setConsent} from './social.js';
+import {creditStatus,requestRecharge,PACKS} from './credits.js';
 import {supportMessage,aiCheckCommand} from './support.js';
 import {sendWelcome,onbCallback,onboardingMessage,clearOnb,processDue} from './onboarding.js';
+const botOnly=env=>env?.SALON_MANAGEMENT_MODE!=='legacy';
 const STALE=20*60000; // an unfinished wizard or team question is dropped after 20 idle minutes
 
 const one=(db,sql,...a)=>db.prepare(sql).bind(...a).first();
@@ -94,7 +96,7 @@ const help=(name,sms,P)=>'<b>راهنمای مدیر مزون'+(name?' — '+esc
  'مشتری‌هایی که با لینک یک مزون‌دار آمده‌اند فقط به خود او می‌رسند. اگر مشتری یک مزون‌دار با لینک مزون‌دار دیگری بیاید، یک پیام کوتاه می‌گیرید که اگر خواستید جابه‌جایش کنید.\n\n'+
  '<b>🖼 نمونه‌کار</b>\nعکس را همین‌جا بفرستید و زیرش (کپشن) اسم کار را بنویسید، مثلاً «پرنسسی پفی دانتل» یا «ماهی ساده یقه هفت». عکس لباس را تک‌عکس و واضح بفرستید؛ لباس روی مانکن یا آویز، تمام‌قد و با نور خوب، تا مشتری همان لباس را روی خودش ببیند. هر لباس را از ۴ زاویه بفرستید: روبه‌رو، از کنار، از پشت و یک نمای نزدیک از جزئیات. همهٔ عکس‌ها را یک‌جا (آلبوم) بفرستید و کپشن را روی یکی بنویسید؛ آلبوم یک لباس حساب می‌شود و ترتیب عکس‌ها (اولی = روبه‌رو) مهم است. عکس بلافاصله روی صفحهٔ مزون می‌نشیند. با فرستادن عکس تأیید می‌کنید اجازهٔ انتشارش را دارید.\n\n'+
  '<b>📲 لینک برای مشتری</b>\nشمارهٔ موبایل مشتری را بنویسید (مثلاً ۰۹۱۲۱۲۳۴۵۶۷، تا ۵ شماره با فاصله)'+(sms?' تا لینک مزون برایش پیامک شود.':'. دکمه‌هایی می‌آید که لینک را با واتساپ، تلگرام، پیامک از گوشی خودتان، بله یا دایرکت اینستاگرام برایش بفرستید. /share همین دکمه‌ها را بدون شماره می‌دهد.')+'\n\n'+
- '<b>دستورها</b>\n/share فرستادن لینک برای مشتری با پیام‌رسان\n/team تیم مزون: افزودن و حذف مزون‌دار، لینک دعوت و لینک اختصاصی هر نفر\n/link لینک اختصاصی خودتان (اگر خودتان هم کار می‌کنید)\n/setup تکمیل یا تغییر اطلاعات صفحهٔ مزون (هر سؤال «رد شو» دارد)\n/list نمونه‌کارها و حذف\n/help همین راهنما';
+ '<b>دستورها</b>\n/share فرستادن لینک برای مشتری با پیام‌رسان\n/team تیم مزون: افزودن و حذف مزون‌دار، لینک دعوت و لینک اختصاصی هر نفر\n/link لینک اختصاصی خودتان (اگر خودتان هم کار می‌کنید)\n/setup تکمیل یا تغییر اطلاعات صفحهٔ مزون (هر سؤال «رد شو» دارد)\n/list نمونه‌کارها، تغییر نام و حذف\n/customers مشتری‌ها و شماره تماس\n/find 09121234567 جستجوی شماره\n/requests فهرست و وضعیت درخواست‌ها\n/export فایل مشتری‌ها\n/balance اعتبار و درخواست شارژ\n/help همین راهنما';
 const ownerHelp='<b>گزارش‌های مزون آینه</b>\n\nاز این به بعد هشدارها همین‌جا می‌آید: مزون یا مزون‌داری که ربات را وصل کرد یا نکرد، صفحه‌ای که کامل یا نیمه‌کاره ماند، درخواستی که ۲۴ ساعت بی‌جواب ماند یا گیر کرد، و خطاهای ربات. هر شب ساعت ۲۱ هم خلاصهٔ روز می‌آید.\n\n/report خلاصهٔ همین الان';
 async function salonByChat(db,p,chat){return one(db,'SELECT * FROM salons WHERE '+PLATFORMS[p].col+'=?',String(chat))}
 // Who is writing: the salon's manager chat, or a team member's chat (manager wins if both).
@@ -111,7 +113,7 @@ const staffHelp=(t,salon,origin,sms)=>'<b>'+esc(t.name)+' — تیم «'+esc(sal
  '<b>📥 درخواست مشتری‌هایت</b>\nهمین‌جا با عکس قبل و بعد، اسم و شماره می‌آید. بعد از تماس یکی از دکمه‌ها را بزن («📞 تماس گرفتم»، «✅ نوبت دادم»، «🚫 بسته شد») تا مشتری خبردار شود.\n\n'+
  '<b>🖼 نمونه‌کار</b>\nعکس کارت را بفرست و زیرش اسم کار را بنویس (مثلاً «پرنسسی پفی دانتل»). با اسم تو روی صفحهٔ مزون می‌نشیند و مشتری‌هایت اول کارهای تو را می‌بینند. برای حذف، /list را بزن.\n\n'+
  '<b>📲 فرستادن لینک برای مشتری</b>\nشمارهٔ موبایل مشتری را بنویس (تا ۵ شماره با فاصله)'+(sms?' تا لینک اختصاصی تو برایش پیامک شود.':'. دکمه‌هایی می‌آید که لینک اختصاصی‌ات را با واتساپ، تلگرام، پیامک از گوشی خودت، بله یا دایرکت اینستاگرام برایش بفرستی.')+'\n\n'+
- '/share فرستادن لینک با پیام‌رسان\n/link لینک اختصاصی من\n/list نمونه‌کارهای من و حذف\n/help همین راهنما';
+ '/share فرستادن لینک با پیام‌رسان\n/link لینک اختصاصی من\n/list نمونه‌کارهای من و حذف\n/requests درخواست‌های خودم\n/customers مشتری‌های خودم\n/help همین راهنما';
 // One-time invite for a member (same code format as the salon link, kept on the member's row).
 export async function staffInvite(db,env,t){
  const raw=Array.from(crypto.getRandomValues(new Uint8Array(12)),x=>x.toString(16).padStart(2,'0')).join('');
@@ -148,7 +150,7 @@ async function handle(req,env,p,exec){
   if(/^\/aicheck(@\w+)?$/i.test(textIn)){if(owner)await aiCheckCommand(ctx);return J({ok:true})}
   if(/^\/start(@\w+)?(\s|$)/.test(textIn)){await onStart(ctx,textIn.split(/\s+/)[1]||'');return J({ok:true})}
   if(/^\/(welcome|platform)(@\w+)?$/i.test(textIn)){await clearOnb(db,p,ctx.chat);await sendWelcome(ctx,{panel:await hasPanel(ctx),force:true});return J({ok:true})}
-  if(await onboardingMessage(ctx,m,textIn))return J({ok:true});
+  if(!botOnly(env)&&await onboardingMessage(ctx,m,textIn))return J({ok:true});
   if(/^\/help(@\w+)?$/.test(textIn)&&owner&&!await actorByChat(db,p,ctx.chat)){await sendManagerHelp(ctx);return J({ok:true})}
   if(textIn==='/report'&&owner){await sendDigest(env,[{platform:p,chat_id:ctx.chat}]);return J({ok:true})}
   const actor=await actorByChat(db,p,ctx.chat);
@@ -158,6 +160,11 @@ async function handle(req,env,p,exec){
   if(!actor){await strangerMessage(ctx,m,textIn);return J({ok:true})}
   const salon=actor.salon;ctx.salon=salon;ctx.staff=actor.staff||null;ctx.role=actor.role;
   if(actor.role==='staff'){await staffMessage(ctx,m,textIn);return J({ok:true})}
+  if(textIn==='/customers'){await sendCustomers(ctx);return J({ok:true})}
+  if(textIn==='/requests'){await sendRequests(ctx);return J({ok:true})}
+  if(textIn==='/export'){await exportCustomers(ctx);return J({ok:true})}
+  if(textIn==='/balance'){await sendBalance(ctx);return J({ok:true})}
+  if(textIn.startsWith('/find ')){await findCustomer(ctx,textIn.slice(6));return J({ok:true})}
   if(textIn==='/link'){await managerLink(ctx);return J({ok:true})}
   if(textIn==='/team'){await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);await sendTeam(ctx);return J({ok:true})}
   if(textIn==='/help'){await ctx.say(help(salon.name,inviteReady(env),PLATFORMS[p]),{parse_mode:'HTML'});return J({ok:true})}
@@ -227,7 +234,7 @@ async function onStart(ctx,arg){
   const salon=await one(db,'SELECT * FROM salons WHERE telegram_code_hash=? AND telegram_code_expires>?',await hash(arg),Date.now());
   if(!salon){const t=await one(db,'SELECT * FROM team WHERE invite_hash=? AND invite_expires>? AND active=1',await hash(arg),Date.now());if(t){await linkStaff(ctx,t);return}}
   if(!salon){await ctx.say('این لینک اتصال منقضی یا قبلاً استفاده شده است. لینک تازه را از تیم مزون آینه بگیرید.');return}
-  await linkSalonChat(ctx,salon);
+  await linkSalonChat(ctx,salon,{wizard:!botOnly(env),via:'لینک اختصاصی یک‌بارمصرف ادمین'});
   return;
  }
  if(/^f_[a-f0-9]{24}$/.test(arg)){await follow(ctx,arg.slice(2));return}
@@ -335,6 +342,8 @@ async function staffMessage(ctx,m,textIn){
  const t=ctx.staff;
  if(textIn==='/help'||textIn==='/link'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
  if(textIn==='/list'){await sendList(ctx);return}
+ if(textIn==='/requests'){await sendRequests(ctx);return}
+ if(textIn==='/customers'){await sendCustomers(ctx);return}
  const numbers=mobilesIn(textIn);
  if(numbers.length){if(inviteReady(ctx.env))await sendInvites(ctx.env,ctx.db,ctx.salon,ctx.chat,numbers,ctx.say,t);else await shareInvites(ctx,numbers,t);return}
  if(textIn==='/share'){await shareInvites(ctx,[],t);return}
@@ -536,7 +545,7 @@ export function leadKeyboard(lead,p,members=[]){
  return {inline_keyboard:rows};
 }
 async function onCallback(ctx,q){
- if(String(q.data||'').startsWith('ob:')){await onbCallback(ctx,q);return}
+ if(String(q.data||'').startsWith('ob:')){if(botOnly(ctx.env)){const chat=String(q.message?.chat?.id||'');await call(ctx.env,ctx.p,'answerCallbackQuery',{callback_query_id:q.id,text:'فقط مدیر معرفی‌شده توسط ادمین وصل می‌شود.'}).catch(()=>{});if(chat)await call(ctx.env,ctx.p,'sendMessage',{chat_id:chat,text:'برای مدیریت مزون، لینک اختصاصی ربات را از ادمین آینه بگیرید. پنل وب مدیر مزون غیرفعال است.'}).catch(()=>{});return}await onbCallback(ctx,q);return}
  if(String(q.data||'').startsWith('sc:')){await consentCallback(ctx,q,String(q.data));return}
  const {env,db,p}=ctx,chat=String(q.message?.chat?.id||''),actor=await actorByChat(db,p,chat),salon=actor?.salon||null;ctx.chat=chat;ctx.salon=salon;ctx.staff=actor?.staff||null;
  const manager=actor?.role==='manager';ctx.role=actor?.role;
@@ -554,7 +563,7 @@ async function onCallback(ctx,q){
    if(LABEL[status]&&/^[a-f0-9-]{36}$/.test(id)){
     const lead=await one(db,'SELECT * FROM leads WHERE id=? AND salon_id=?',id,salon.id);
     // Only the request's owner may act on it: its member, or the manager for salon customers.
-    const mayAct=lead&&(lead.staff_id?(ctx.staff&&ctx.staff.id===lead.staff_id):manager);
+    const mayAct=lead&&(manager&&botOnly(env)?true:(lead.staff_id?(ctx.staff&&ctx.staff.id===lead.staff_id):manager));
     if(!lead)note='این درخواست دیگر در سیستم نیست';
     else if(!mayAct)note='این درخواست مال نیروی دیگری است';
     else{
