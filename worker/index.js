@@ -1,6 +1,6 @@
 import {appHTML} from './ui.js';
 import {customerHTML} from './customer.js';
-import {api,errorResponse,tick} from './server.js';
+import {api,errorResponse,tick,botOnlyManagement} from './server.js';
 import {must,hash} from './domain.js';
 import {setting,setSetting} from './alerts.js';
 import {fontResponse} from './fonts.js';
@@ -66,8 +66,10 @@ export default {
    if(!sl||!sl.approved)return new Response(notFound,{status:404,headers:htmlHeaders});
    const tag=v=>'<head><script>window.__'+v+'='+JSON.stringify(sl.slug)+'</script>';
    if(u.pathname==='/'){const html=await salonPage(new URL('/s/'+sl.slug,u),{...env,APP_ORIGIN:u.origin});return new Response((html||customerHTML).replace('<head>',()=>tag('SLUG')),{headers:htmlHeaders});}
+   if(botOnlyManagement(env))return new Response(notFound,{status:404,headers:htmlHeaders});
    return new Response(appHTML.replace('<head>',()=>tag('MGR')),{headers:htmlHeaders});
   }}
+  if((u.pathname==='/register'||u.pathname==='/register/')&&botOnlyManagement(env))return new Response(null,{status:302,headers:{Location:'/', 'Cache-Control':'no-store'}});
   if(u.pathname==='/register'||u.pathname==='/register/')return new Response(registerHTML,{headers:{...htmlHeaders,'Cache-Control':'public,max-age=300'}});
   if(u.pathname==='/privacy'||u.pathname==='/terms')return new Response(legalHTML,{headers:{...htmlHeaders,'Cache-Control':'public,max-age=3600'}});
   if(u.pathname==='/robots.txt'){const o=env.APP_ORIGIN||u.origin;return new Response('User-agent: *\nAllow: /\nAllow: /s/\nDisallow: /api/\nDisallow: /admin\nDisallow: /manager\nDisallow: /register\nDisallow: /r/\n\nSitemap: '+o+'/sitemap.xml\n',{headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public,max-age=3600'}})}
@@ -76,7 +78,7 @@ export default {
   {const m=/^\/u\/([a-f0-9]{12})(\/photo)?$/.exec(u.pathname);if(m){if(m[2]){if(request.method!=='POST')return new Response('Method not allowed',{status:405});return await pairUpload(env,request,m[1])}return await pairPage(env,m[1],notFound)}}
   {const m=/^\/r\/([a-f0-9]{48})(\/img(?:\/([1-3]))?)?$/.exec(u.pathname);if(m){if(m[2]){return (await resultImage(env,m[1],request,Number(m[3]||0)))||new Response('Not found',{status:404,headers:{'Cache-Control':'no-store'}})}return await resultPage(env,m[1],notFound)}}
   if(!pages.some(r=>r.test(u.pathname)))return new Response(notFound,{status:404,headers:htmlHeaders});
-  {const m=/^\/m\/([a-f0-9]{32})\/?$/.exec(u.pathname);if(m)return await panelPage(env,m[1],notFound,htmlHeaders,u);}
+  {const m=/^\/m\/([a-f0-9]{32})\/?$/.exec(u.pathname);if(m)return botOnlyManagement(env)?new Response(notFound,{status:404,headers:htmlHeaders}):await panelPage(env,m[1],notFound,htmlHeaders,u);}
   if(/^\/p\/[a-f0-9]{32}\/?$/.test(u.pathname)){const html=await postPage(u,env);return new Response(html||notFound,{status:html?200:404,headers:htmlHeaders});}
   if(/^\/i\/[a-z0-9-]{1,64}\/?$/.test(u.pathname)){const html=await sharePage(u,env);return new Response(html||notFound,{status:html?200:404,headers:htmlHeaders});}
   if(/^\/s\/[a-z0-9-]{1,64}\/?$/.test(u.pathname)){const html=await salonPage(u,env);return html?new Response(html,{headers:htmlHeaders}):new Response(notFound,{status:404,headers:htmlHeaders});}
