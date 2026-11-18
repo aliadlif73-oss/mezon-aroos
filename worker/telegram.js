@@ -13,6 +13,7 @@
 // Secrets: TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_USERNAME, TELEGRAM_WEBHOOK_SECRET,
 //          BALE_BOT_TOKEN, BALE_BOT_USERNAME (BALE_WEBHOOK_SECRET defaults to the Telegram one).
 import {Problem,must,uid,hash,text,phone,safeLink,digits,limited} from './domain.js';
+import {DRESS_SIZES,SIZE_LABEL,parseDressSizes} from './dress-sizes.js';
 import {inviteReady,sendInvite} from './sms.js';
 import {shareLinks,shareKeyboard} from './share.js';
 import {bucketFor,putImage} from './storage.js';
@@ -559,6 +560,23 @@ async function onCallback(ctx,q){
   else if(data.startsWith('cr:p:')){await sendRequests(ctx,data.slice(5));note='فهرست درخواست‌ها'}
   else if(data.startsWith('cr:d:')){await showRequest(ctx,data.slice(5));note='جزئیات درخواست'}
   else if(data.startsWith('rc:')){if(!manager)note='فقط مدیر مزون';else{const amount=Number(data.slice(3));if(!PACKS.includes(amount))note='بسته نامعتبر است';else{await requestRecharge(db,env,salon,{amount});note='درخواست شارژ ثبت شد';await ctx.say('✅ درخواست شارژ '+fa(amount)+' اعتبار ثبت شد. تیم آینه آن را بررسی می‌کند.')}}}
+  else if(data.startsWith('sz:')||data.startsWith('szdone:')){
+   const done=data.startsWith('szdone:'),parts=data.split(':'),id=parts[1],size=parts[2];
+   const okId=/^[a-f0-9-]{36}$/.test(id)||/^tg[a-zA-Z0-9]+$/.test(id);
+   const dress=okId?await one(db,'SELECT id,title,sizes FROM portfolio WHERE id=? AND salon_id=?'+(manager?'':' AND staff_id=?'),id,salon.id,...(manager?[]:[ctx.staff?.id||''])):null;
+   if(!dress)note='لباس پیدا نشد یا اجازه ویرایش ندارید';
+   else if(!done&&!DRESS_SIZES.includes(size))note='سایز معتبر نیست';
+   else{
+    const chosen=parseDressSizes(dress.sizes);
+    if(!done){const next=chosen.includes(size)?chosen.filter(v=>v!==size):DRESS_SIZES.filter(v=>chosen.includes(v)||v===size);await run(db,'UPDATE portfolio SET sizes=? WHERE id=? AND salon_id=?',JSON.stringify(next),dress.id,salon.id);
+      try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:sizeKeyboard(dress.id,next)})}catch(e){await ctx.say('سایزهای فعلی «'+dress.title+'»:',{reply_markup:sizeKeyboard(dress.id,next)})}
+      note='سایز '+SIZE_LABEL(size)+(next.includes(size)?' انتخاب شد':' حذف شد');
+    }else{note=chosen.length?'سایزهای «'+dress.title+'»: '+chosen.map(SIZE_LABEL).join('، '):'سایزی مشخص نشده';
+      await ctx.say('✅ '+note);
+      try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:{inline_keyboard:[]}})}catch(e){}
+    }
+   }
+  }
   else if(data.startsWith('rn:')){const id=data.slice(3),dress=manager&&/^[a-f0-9-]{36}$/.test(id)&&await one(db,'SELECT id,title FROM portfolio WHERE id=? AND salon_id=? AND published=1',id,salon.id);if(dress){await run(db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({p:ctx.p,dress:id,ts:Date.now()}),salon.id);await ctx.say('✏️ نام جدید «'+dress.title+'» را به‌صورت یک پیام متنی بفرست.');note='منتظر نام جدید'}else note='اجازه تغییر این لباس را ندارید'}
   else if(data.startsWith('del:')&&botOnly(env)){
    const id=data.slice(4),dress=/^[a-f0-9-]{36}$/.test(id)&&await one(db,'SELECT title FROM portfolio WHERE id=? AND salon_id=?'+(manager?'':' AND staff_id=?'),id,salon.id,...(manager?[]:[ctx.staff.id]));
@@ -655,6 +673,16 @@ async function sendInvites(env,db,salon,chat,numbers,say,member=null){
 }
 
 
+function sizeKeyboard(id,selected){
+ const on=new Set(selected);
+ const rows=[];for(let i=0;i<DRESS_SIZES.length;i+=3)rows.push(DRESS_SIZES.slice(i,i+3).map(size=>({text:(on.has(size)?'✅ ':'▫️ ')+SIZE_LABEL(size),callback_data:'sz:'+id+':'+size})));
+ rows.push([{text:'✅ ثبت سایزهای انتخاب‌شده',callback_data:'szdone:'+id}]);
+ return {inline_keyboard:rows};
+}
+async function askDressSizes(ctx,id,title){
+ await ctx.say('📏 سایزهای موجود برای «'+title+'» را انتخاب کنید. می‌توانید چند گزینه را فعال کنید؛ هر انتخاب همان لحظه ذخیره می‌شود. در پایان «ثبت سایزها» را بزنید.',{reply_markup:sizeKeyboard(id,[])});
+}
+
 const ANG=['روبه‌رو','پشت','نیم‌رخ راست','نیم‌رخ چپ'];
 async function addPortfolio(ctx,photo,caption,group,mid){
  const t=ctx.role==='staff'?ctx.staff:null;
@@ -676,11 +704,13 @@ async function addPortfolio(ctx,photo,caption,group,mid){
  if(pos>3){await ctx.say('هر لباس حداکثر ۴ عکس دارد؛ این یکی اضافه نشد.');return}
  const named=name!=='نمونه‌کار';
  if(!group){
+  await askDressSizes(ctx,id,name);
   await ctx.say('✅ «'+esc(name)+'» '+(t?'با اسم تو ':'')+'روی صفحهٔ مزون نشست (فقط ۱ عکس).\nبرای نتیجهٔ بهتر و «زوایای دیگر»، ۲ تا ۴ عکس را با هم به‌صورت آلبوم بفرست: ۱) روبه‌رو ۲) پشت ۳) نیم‌رخ راست ۴) نیم‌رخ چپ.'+(named?'':'\nاسم لباس را هم زیر عکس بنویس.'));
   if(!named&&!t)await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({p:ctx.p,dress:id,ts:Date.now()}),ctx.salon.id);
   return;
  }
  await ctx.say('📷 «'+esc(name)+'»: عکس '+fa(pos+1)+' ('+ANG[pos]+') ثبت شد.'+(ord.length===1?'\nترتیب آلبوم مهم است: ۱) روبه‌رو ۲) پشت ۳) نیم‌رخ راست ۴) نیم‌رخ چپ.':''));
+ if(fresh)await askDressSizes(ctx,id,name);
  if(fresh&&!named&&!t)await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({p:ctx.p,dress:id,ts:Date.now()}),ctx.salon.id);
  if(fresh&&!named)await ctx.say('اسم این لباس چیست؟ همین‌جا فقط اسمش را بنویس (مثلاً «پرنسسی پفی دانتل»).');
 }
