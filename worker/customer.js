@@ -873,9 +873,8 @@ function stepPhoto(){
    h('p',keepNote(),'keepnote'),
    el('details',{class:'collapse tipsbox',open:''},[el('summary',{html:ICO.info+'<span>نکات یک عکس خوب</span>'}),el('ul',{class:'tips'},LP().tips.map(function(t){return el('li',{class:'tip'},[el('span',{html:ICO[t[0]]}),el('span',{},[el('b',{text:t[1]}),document.createTextNode(t[2])])])}))]),
    el('div',{class:'shoot__btns'},[
-    DESK?null:el('button',{class:'btn btn--primary',type:'button',onclick:pickNow,html:ICO.gallery+'<span>انتخاب از گالری</span>'}),
-    el('button',{class:DESK?'btn btn--primary':'btn btn--ghost',type:'button',onclick:openCamera,html:ICO.camera+'<span>عکس با دوربین</span>'}),
-    DESK?el('button',{class:'btn btn--ghost',type:'button',onclick:openPhonePair,html:ICO.send+'<span>ارسال از گوشی خودم</span>'}):null
+    el('button',{class:'btn btn--primary',type:'button',onclick:pickNow,html:ICO.gallery+'<span>'+(DESK?'انتخاب از گالری گوشی (QR)':'انتخاب از گالری')+'</span>'}),
+    el('button',{class:'btn btn--ghost',type:'button',onclick:openCamera,html:ICO.camera+'<span>عکس با دوربین</span>'})
    ])
   ]);
   box.append(input,el('div',{class:'demo-row'},[demoCompare('demo--small'),el('div',{class:'demo-row__text'},[h('b','این‌طوری می‌شود'),h('span',LP().demo)])]),el('div',{class:'shoot'},[drop,side]));
@@ -1755,21 +1754,23 @@ function openPhonePair(){
  var seen='',timer=0,stopped=false;
  var panel=el('div',{class:'sheet__panel'});
  function stop(){stopped=true;clearTimeout(timer)}
- panel.append(el('div',{class:'sheet__head'},[h('h2','ارسال عکس از گوشی خودت'),el('button',{class:'sheet__x',type:'button','aria-label':'بستن',text:'×',onclick:function(){stop();closeSheet()}})]));
+ panel.append(el('div',{class:'sheet__head'},[h('h2','انتخاب عکس از گالری گوشی'),el('button',{class:'sheet__x',type:'button','aria-label':'بستن',text:'×',onclick:function(){stop();closeSheet()}})]));
  var box=el('div',{class:'qr'},[h('p','در حال ساخت کد…','qr__note')]);
- panel.append(box,el('ol',{class:'pairsteps'},[el('li',{text:'دوربین گوشی را روی کد بگیر'}),el('li',{text:'عکس تمام‌قدت را بگیر یا از گالری بفرست'}),el('li',{text:'همین‌جا خودکار ادامه پیدا می‌کند'})]));
+ panel.append(box,el('ol',{class:'pairsteps'},[el('li',{text:'کد QR را با گوشی مشتری اسکن کنید'}),el('li',{text:'عکس تمام‌قد را از گالری گوشی انتخاب و ارسال کنید'}),el('li',{text:'عکس خودکار روی همین نمایشگر مزون ظاهر می‌شود'})]));
  openSheet(panel);
+ var pairDialog=$('#sheet');if(pairDialog)pairDialog.addEventListener('close',stop,{once:true});
  function poll(){
   if(stopped)return;
   api('pair/check?seen='+encodeURIComponent(seen)).then(function(d){
    if(stopped)return;
    if(d.state==='received'){stop();closeSheet();acceptPhoto(d.media_id);return}
+   if(d.state==='none'){stop();box.replaceChildren(notice('warn','اتصال این صفحه قطع شده است. دوباره کد بگیرید.'),el('button',{class:'btn btn--primary',type:'button',text:'ساخت کد جدید',onclick:function(){closeSheet();openPhonePair()}}));return}
    if(d.state==='expired'){box.replaceChildren(notice('warn','کد منقضی شد.'),el('button',{class:'btn btn--primary',type:'button',text:'کد تازه',onclick:function(){stop();closeSheet();openPhonePair()}}));return}
    timer=setTimeout(poll,2000);
   }).catch(function(){timer=setTimeout(poll,4000)});
  }
  ensureSession().then(function(){return api('pair',{v:VISITOR})}).then(function(d){
-  box.replaceChildren(el('div',{class:'qr__code',dir:'ltr',html:qrSvg(d.url)}),h('p','کد ۱۵ دقیقه معتبر است و فقط عکس را به همین دستگاه می‌رساند.','qr__note'));
+  box.replaceChildren(el('div',{class:'qr__code',dir:'ltr',html:qrSvg(d.url)}),h('p','لینک اختصاصی این نشست، ۱۵ دقیقه معتبر است. پس از ارسال عکس، تصویر خودکار به همین صفحه منتقل می‌شود.','qr__note'));
   poll();
  }).catch(function(e){stop();box.replaceChildren(notice('danger',e.message||'ساخت کد ممکن نشد'))});
 }
@@ -1850,7 +1851,7 @@ function friendly(msg){
  if(/درخواست را نپذیرفت/.test(msg))return 'سرویس تصویر درخواست را نپذیرفت. کمی بعد دوباره تلاش کن.';
  return msg;
 }
-function pickNow(){if(DESK){kioskCamera();return}var pick=$('#pick');if(pick)pick.click();else toast('اول عکس خودت را اضافه کن')}
+function pickNow(){if(DESK){openPhonePair();return}var pick=$('#pick');if(pick)pick.click();else toast('اول عکس خودت را اضافه کن')}
 function updateProgress(){if(PMC&&PMC.root&&PMC.root.isConnected&&PMC.mode==='build')PMC.kick()}
 // The state machine (genReduce) decides what the scene shows; this function only feeds it what happened.
 var GM=genReduce(null,{type:'leave'}),POLLTOK=0;
@@ -2519,7 +2520,7 @@ function openSaved(){
 /* offline banner */
 (function(){var bar=document.createElement('div');bar.className='offline-bar';bar.setAttribute('role','status');bar.hidden=navigator.onLine!==false;bar.innerHTML='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M3.5 9.5a12 12 0 0 1 17 0M7 13a7 7 0 0 1 10 0M10.4 16.4a2.4 2.4 0 0 1 3.2 0M4 4l16 16"/></svg><span>اینترنت قطع است؛ تا وصل‌شدن دوباره، دکمه‌ها کار نمی‌کنند.</span>';document.body.append(bar);function u(){bar.hidden=navigator.onLine}window.addEventListener('online',u);window.addEventListener('offline',u)})();
 var KIOSK=/[?&]kiosk=1(&|$)/.test(location.search);
-var DESK=KIOSK||!!(window.matchMedia&&matchMedia('(min-width:900px) and (hover:hover)').matches);
+var DESK=KIOSK||isTablet()||!!(window.matchMedia&&matchMedia('(min-width:900px) and (hover:hover)').matches);
 function qrSvg(text){
  var logo=state.pub&&state.pub.salon&&state.pub.salon.profile&&state.pub.salon.profile.logo,q=qrcode(0,logo?'H':'M');q.addData(text);q.make();
  var svg=q.createSvgTag({cellSize:7,margin:2,scalable:true});
