@@ -379,9 +379,14 @@ test('manager builds the team in the bot; a member links their own chat and gets
  await hook(e,{message:{chat:{id:777,type:'private'},text:'/start '+code}});assert.equal(e.DB.sql.prepare('SELECT telegram_chat_id c FROM team').get().c,null,'the manager chat cannot become a member');
  await hook(e,{message:{chat:{id:4001,type:'private'},text:'/start '+code}});
  assert.equal(e.DB.sql.prepare('SELECT telegram_chat_id c FROM team').get().c,'4001');
- assert(sentTo(tg,4001).some(c=>c.body.text?.includes('?r='+t.ref_code)));
+ assert(sentTo(tg,4001).some(c=>c.body.text?.includes('/newdress')),'newly linked member receives the four-angle dress guide');
  await hook(e,{message:{chat:{id:4001,type:'private'},text:'/team'}});assert(!/تیم «/.test(sentTo(tg,4001).at(-1).body.text),'members cannot manage the team');
- await hook(e,{message:{chat:{id:4001,type:'private'},photo:[{file_id:'p1',file_size:100}],caption:'پرنسسی پفی'}});
+ await hook(e,{message:{chat:{id:4001,type:'private'},text:'/newdress'}});
+ for(const id of ['p1','p1','p1','p1'])await hook(e,{message:{chat:{id:4001,type:'private'},photo:[{file_id:id,file_size:100}]}}); 
+ await hook(e,{message:{chat:{id:4001,type:'private'},text:'پرنسسی پفی'}});
+ const pending=e.DB.sql.prepare('SELECT id,published,staff_id FROM portfolio').get();assert.equal(pending.published,0);
+ await hook(e,{callback_query:{id:'size1',data:'sz:'+pending.id+':38',message:{chat:{id:4001},message_id:40}}});
+ await hook(e,{callback_query:{id:'sizedone',data:'szdone:'+pending.id,message:{chat:{id:4001},message_id:40}}});
  const pf=e.DB.sql.prepare('SELECT stylist,staff_id FROM portfolio').get();assert.equal(pf.stylist,'مریم محمدی');assert.equal(pf.staff_id,t.id);
  assert.equal((await call(e,'/api/s/salon-a/public')).data.portfolio[0].maker,t.id);
  await hook(e,{message:{chat:{id:4001,type:'private'},text:'/start '+code}});assert.match(sentTo(tg,4001).at(-1).body.text,/منقضی|لینک اختصاصی/);
