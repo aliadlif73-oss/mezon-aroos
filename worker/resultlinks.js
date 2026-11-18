@@ -57,56 +57,7 @@ export async function resultPage(env,token,notFound){
   '<button class="b" id="sh" type="button" style="background:#0c6b6b">اشتراک‌گذاری عکس</button>'+
   '<p id="share-note" role="status" aria-live="polite"></p>'+
   '<div id="share-fallback" hidden><p>اگر اشتراک‌گذاری عکس در مرورگرتان پشتیبانی نمی‌شود، تصویر را دانلود کنید یا لینک شخصی را بفرستید:</p><a class="b" id="share-wa" target="_blank" rel="noopener noreferrer">واتساپ</a><a class="b" id="share-tg" target="_blank" rel="noopener noreferrer">تلگرام</a><a class="b" id="share-sms">پیامک</a><button class="b" type="button" id="share-copy">کپی لینک</button></div>'+
-  '<script>(function(){
-var b=document.getElementById(\"sh\"),note=document.getElementById(\"share-note\"),fallback=document.getElementById(\"share-fallback\");
-var imageUrl=\"/r/'+token+'/img\",file=null,loading=null;
-function status(message){note.textContent=message||\"\"}
-function shareableFile(){return !!(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}))}
-function prepare(){
- if(loading)return loading;
- loading=fetch(imageUrl,{credentials:\"same-origin\",cache:\"no-store\"}).then(function(r){
-  if(!r.ok)throw Error(\"photo unavailable\");
-  return r.blob();
- }).then(function(blob){
-  var mime=blob.type||\"image/jpeg\",ext=mime.indexOf(\"video/\")===0?\"mp4\":mime.indexOf(\"png\")>=0?\"png\":mime.indexOf(\"webp\")>=0?\"webp\":\"jpg\";
-  file=new File([blob],\"ayeneh-bridal-result.\"+ext,{type:mime});
-  status(\"\");
-  return file;
- }).catch(function(){status(\"عکس برای اشتراک‌گذاری آماده نشد. می‌توانید آن را دانلود کنید یا لینک را بفرستید.\");return null});
- return loading;
-}
-function showAlternatives(){
- fallback.hidden=false;
- var link=location.href;
- document.getElementById(\"share-wa\").href=\"https://wa.me/?text=\"+encodeURIComponent(link);
- document.getElementById(\"share-tg\").href=\"https://t.me/share/url?url=\"+encodeURIComponent(link);
- document.getElementById(\"share-sms\").href=\"sms:?&body=\"+encodeURIComponent(link);
-}
-b.addEventListener(\"click\",function(){
- // The prepared File must be passed to navigator.share DURING the user gesture.
- // A fetch awaited in this handler loses transient activation on several mobile browsers.
- if(shareableFile()){
-  navigator.share({files:[file],title:\"تصویر پرو مجازی آینه\"}).catch(function(err){
-   if(err&&err.name===\"AbortError\")return;
-   status(\"ارسال مستقیم عکس در این مرورگر انجام نشد. از دانلود یا اشتراک لینک استفاده کنید.\");showAlternatives();
-  });
-  return;
- }
- if(navigator.share){
-  navigator.share({title:\"تصویر پرو مجازی آینه\",url:location.href}).catch(function(err){
-   if(err&&err.name===\"AbortError\")return;
-   status(\"اشتراک‌گذاری مستقیم ممکن نشد؛ از گزینه‌های زیر استفاده کنید.\");showAlternatives();
-  });
- }else{status(\"مرورگر شما منوی اشتراک‌گذاری ندارد؛ عکس را دانلود کنید یا لینک را از گزینه‌های زیر بفرستید.\");showAlternatives()}
-});
-document.getElementById(\"share-copy\").addEventListener(\"click\",function(){
- if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(location.href).then(function(){status(\"لینک کپی شد.\")},function(){status(\"لطفاً لینک صفحه را از نوار مرورگر کپی کنید.\")});
- else status(\"لطفاً لینک صفحه را از نوار مرورگر کپی کنید.\");
-});
-if(!navigator.share)showAlternatives();
-// Prefetch before tapping, to preserve user activation for native file sharing.
-prepare();
-})()</script>'+
+  '<script>(function(){ var b=document.getElementById(\"sh\"),note=document.getElementById(\"share-note\"),fallback=document.getElementById(\"share-fallback\"); var imageUrl=\"/r/'+token+'/img\",file=null,loading=null; function status(message){note.textContent=message||\"\"} function shareableFile(){return !!(file&&navigator.share&&navigator.canShare&&navigator.canShare({files:[file]}))} function prepare(){  if(loading)return loading;  loading=fetch(imageUrl,{credentials:\"same-origin\",cache:\"no-store\"}).then(function(r){   if(!r.ok)throw Error(\"photo unavailable\");   return r.blob();  }).then(function(blob){   var mime=blob.type||\"image/jpeg\",ext=mime.indexOf(\"video/\")===0?\"mp4\":mime.indexOf(\"png\")>=0?\"png\":mime.indexOf(\"webp\")>=0?\"webp\":\"jpg\";   file=new File([blob],\"ayeneh-bridal-result.\"+ext,{type:mime});   status(\"\");   return file;  }).catch(function(){status(\"عکس برای اشتراک‌گذاری آماده نشد. می‌توانید آن را دانلود کنید یا لینک را بفرستید.\");return null});  return loading; } function showAlternatives(){  fallback.hidden=false;  var link=location.href;  document.getElementById(\"share-wa\").href=\"https://wa.me/?text=\"+encodeURIComponent(link);  document.getElementById(\"share-tg\").href=\"https://t.me/share/url?url=\"+encodeURIComponent(link);  document.getElementById(\"share-sms\").href=\"sms:?&body=\"+encodeURIComponent(link); } b.addEventListener(\"click\",function(){    if(shareableFile()){   navigator.share({files:[file],title:\"تصویر پرو مجازی آینه\"}).catch(function(err){    if(err&&err.name===\"AbortError\")return;    status(\"ارسال مستقیم عکس در این مرورگر انجام نشد. از دانلود یا اشتراک لینک استفاده کنید.\");showAlternatives();   });   return;  }  if(navigator.share){   navigator.share({title:\"تصویر پرو مجازی آینه\",url:location.href}).catch(function(err){    if(err&&err.name===\"AbortError\")return;    status(\"اشتراک‌گذاری مستقیم ممکن نشد؛ از گزینه‌های زیر استفاده کنید.\");showAlternatives();   });  }else{status(\"مرورگر شما منوی اشتراک‌گذاری ندارد؛ عکس را دانلود کنید یا لینک را از گزینه‌های زیر بفرستید.\");showAlternatives()} }); document.getElementById(\"share-copy\").addEventListener(\"click\",function(){  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(location.href).then(function(){status(\"لینک کپی شد.\")},function(){status(\"لطفاً لینک صفحه را از نوار مرورگر کپی کنید.\")});  else status(\"لطفاً لینک صفحه را از نوار مرورگر کپی کنید.\"); }); if(!navigator.share)showAlternatives();  prepare(); })()</script>'+
   '<p>این لینک شخصی است و بعد از '+Math.max(1,Math.round((l.expires_at-l.created_at)/HOUR))+' ساعت خودش بسته می‌شود.</p></body></html>';
  return new Response(html,{headers:{...headers,'Content-Type':'text/html;charset=utf-8','Content-Security-Policy':"default-src 'none'; img-src 'self'; media-src 'self'; connect-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'"}});
 }
