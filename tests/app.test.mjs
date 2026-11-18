@@ -682,7 +682,7 @@ test('step 2: landing page has the sections, meta tags, caching and no external 
 test('step 2: customer page paints the boutique name in the skeleton and offers save and compare',async()=>{
  const e=fixture(),s=await salon(e);
  const html=await(await app.fetch(new Request(origin+'/s/'+s.slug),e)).text();
- assert.match(html,/class="hero__name" style="height:auto">[^<]+</);
+ assert.match(html,/class="salon-brand__name">[^<]+</);
  for(const needle of ['function openSaved','memSaved','data-save','تلاش دوباره','مقایسهٔ لباس‌های ذخیره‌شده','ارتباط برقرار نشد'])assert(html.includes(needle),needle);
 });
 
