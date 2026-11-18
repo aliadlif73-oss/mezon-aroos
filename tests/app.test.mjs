@@ -1535,7 +1535,7 @@ test('finish fitting revokes old kiosk session, temporary photos and QR, then is
  assert.equal(finished.status,200,JSON.stringify(finished));assert.ok(finished.cookie&&finished.cookie!==guestOne.cookie);
  assert.equal((await call(e,'/api/s/'+sal.slug+'/session',undefined,guestOne)).status,401,'old session cannot be reused');
  assert.equal((await call(e,'/api/s/'+sal.slug+'/session',undefined,{cookie:finished.cookie})).status,200);
- assert.equal((await call(e,'/api/s/'+sal.slug+'/media/'+original,undefined,{cookie:finished.cookie})).status,403,'new bride cannot access old photo');
+ assert.equal((await call(e,'/api/s/'+sal.slug+'/media/'+original,undefined,{cookie:finished.cookie})).status,404,'old temporary photo was physically deleted');
  assert.equal((await app.fetch(new Request(origin+'/u/'+pair.code),e)).status,404,'old QR expired');
  assert.equal((await call(e,'/api/s/'+sal.slug+'/pair/check?seen=',undefined,{cookie:finished.cookie})).data.state,'none');
  assert.match(customerHTML,/پایان پرو و مشتری بعدی/);
