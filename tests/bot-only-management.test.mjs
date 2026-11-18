@@ -91,6 +91,6 @@ test('single-use admin invite links exactly one Telegram manager chat and CRM ne
   bot.calls.length=0;await hook(env,101,'/balance');
   assert.match(bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text,/اعتبار/);
   bot.calls.length=0;await button(env,202,'cu:d:'+own);
-  assert.equal(bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text.includes('09121234567'),false,'unlinked chat cannot read customers');
+  assert.equal(bot.calls.some(x=>x.method==='sendMessage'&&String(x.body.text).includes('09121234567')),false,'unlinked chat cannot read customers');
  }finally{bot.restore()}
 });
