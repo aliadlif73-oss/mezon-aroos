@@ -12,11 +12,11 @@ export async function normalizeDressPhoto(env,originalBytes){
   const source=new Response(originalBytes,{headers:{'Content-Type':'image/jpeg'}}).body;
   const result=await env.IMAGES.input(source)
    .transform({segment:'foreground',background:DRESS_STUDIO_BG})
-   .output({format:'image/webp',quality:94})
+   .output({format:'image/jpeg',quality:95})
    .response();
   if(!result.ok)throw new Error('Images '+result.status);
   const bytes=new Uint8Array(await result.arrayBuffer());
-  if(bytes.length<100||bytes[0]!==0x52||bytes[1]!==0x49||bytes[2]!==0x46||bytes[3]!==0x46)
+  if(bytes.length<100||bytes[0]!==0xff||bytes[1]!==0xd8||bytes[2]!==0xff)
    throw new Error('Unexpected output format');
   return bytes;
  }catch(err){
