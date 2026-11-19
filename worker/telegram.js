@@ -17,6 +17,7 @@ import {DRESS_SIZES,SIZE_LABEL,parseDressSizes} from './dress-sizes.js';
 import {inviteReady,sendInvite} from './sms.js';
 import {shareLinks,shareKeyboard} from './share.js';
 import {bucketFor,putImage} from './storage.js';
+import {normalizeDressPhoto} from './dress-background.js';
 import {createStaff,transfer,assign,team as teamOf,SPECIALTIES} from './referral.js';
 import {LINE_LABEL} from './lines.js';
 import {setLeadStatus} from './dresses.js';
@@ -695,7 +696,7 @@ async function beginDress(ctx){
  if(state.team||Number.isInteger(state.step)){await ctx.say('ابتدا فرآیند قبلی را پایان دهید.');return}
  const draft={p:ctx.p,chat:ctx.chat,ts:Date.now(),dressUpload:{stage:'photos',images:[],staffId:ctx.role==='staff'?ctx.staff.id:null}};
  await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify(draft),ctx.salon.id);
- await ctx.say('📸 مرحله ۱/۴: عکس «جلو» را جداگانه بفرستید. سپس به‌ترتیب بغل راست، بغل چپ و پشت؛ بعد نام مدل و سایزها. /cancel انصراف');
+ await ctx.say('📸 مرحله ۱/۴: عکس «جلو» را جداگانه بفرستید. بک شلوغ مزون خودکار حذف می‌شود و عکس روی بک ثابت خاکستری گرم آینه قرار می‌گیرد. بعد بغل راست، بغل چپ و پشت را بفرستید؛ سپس نام مدل و سایزها. /cancel انصراف');
 }
 async function cancelDress(ctx){
  const s=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
@@ -712,10 +713,21 @@ async function dressReply(ctx,state,m,msg){
   if(!ph){await ctx.say('لطفاً عکس «'+DRESS_ANGLES[x.images.length]+'» را ارسال کنید.');return}
   if(m.media_group_id){await ctx.say('عکس‌ها را جداگانه ارسال کنید؛ نه آلبوم.');return}
   must((ph.file_size||0)<=5*1024*1024,'حجم عکس بیشتر از ۵ مگابایت است');
-  const media=await putImage(ctx.env,ctx.salon,null,await fileBytes(ctx.env,ctx.p,ph.file_id),'portfolio');
+  const raw=await fileBytes(ctx.env,ctx.p,ph.file_id);
+  const normalized=await normalizeDressPhoto(ctx.env,raw);
+  const media=await putImage(ctx.env,ctx.salon,null,normalized,'portfolio');
   const images=[...x.images,media],stage=images.length===4?'name':'photos';
   await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now(),dressUpload:{...x,images,stage}}),ctx.salon.id);
-  await ctx.say(stage==='name'?'✅ هر چهار عکس ثبت شد. نام مدل را بنویسید.':'✅ عکس «'+DRESS_ANGLES[images.length-1]+'» ذخیره شد. حالا «'+DRESS_ANGLES[images.length]+'» را بفرستید.');
+  // Show the real standardized image in Telegram so the boutique can check
+  // lace, veil, hem and mannequin edges before sending the next angle.
+  try{
+   const form=new FormData();
+   form.append('chat_id',ctx.chat);
+   form.append('photo',new Blob([normalized],{type:'image/webp'}),'ayeneh-studio.webp');
+   form.append('caption','✅ پیش‌نمایش بک ثابت آینه — زاویه «'+DRESS_ANGLES[images.length-1]+'»');
+   await call(ctx.env,ctx.p,'sendPhoto',form);
+  }catch(err){console.error('dress preview send failed',err?.message)}
+  await ctx.say(stage==='name'?'✅ هر چهار عکس با بک ثابت ثبت شد. حالا نام مدل را بنویسید.':'✅ عکس «'+DRESS_ANGLES[images.length-1]+'» با بک ثابت ثبت شد. حالا «'+DRESS_ANGLES[images.length]+'» را بفرستید.');
   return;
  }
  if(x.stage==='name'){
