@@ -43,5 +43,10 @@ LIMITS_OFF = "1"
 IMAGE_MODEL = "gpt"
 IMAGE_QUALITY = "xhigh"
 
+# Cloudflare Images processing for standardized boutique catalog photos.
+# This image binding is billed per unique transformation.
+[images]
+binding = "IMAGES"
+
 [assets]
 directory = "./public"
