@@ -723,7 +723,7 @@ async function dressReply(ctx,state,m,msg){
   try{
    const form=new FormData();
    form.append('chat_id',ctx.chat);
-   form.append('photo',new Blob([normalized],{type:'image/webp'}),'ayeneh-studio.webp');
+   form.append('photo',new Blob([normalized],{type:'image/jpeg'}),'ayeneh-studio.jpg');
    form.append('caption','✅ پیش‌نمایش بک ثابت آینه — زاویه «'+DRESS_ANGLES[images.length-1]+'»');
    await call(ctx.env,ctx.p,'sendPhoto',form);
   }catch(err){console.error('dress preview send failed',err?.message)}
