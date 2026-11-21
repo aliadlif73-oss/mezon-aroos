@@ -458,7 +458,7 @@ return new Response(object.body,{headers:base});}
   return J({ok:true,refunded:refunded||g.refunded===1});}
  if(route==='send-bot'&&req.method==='POST'){const b=await req.json(),g=await ownGen(b.gen);return J(await sendToMe(env,env.APP_ORIGIN||u.origin,salon,s,g));}
  if(route==='pair'&&req.method==='POST'){await limited(db,'pair:'+s.id,30);return J(await createPairing(db,salon,s,env.APP_ORIGIN||u.origin));}
- if(route==='pair/check')return J(await pairStatus(db,salon,s,u.searchParams.get('seen')||''));
+ if(route==='pair/check')return J(await pairStatus(db,salon,s,u.searchParams.get('seen')||'',u.searchParams.get('code')));
  if(route==='erase'&&req.method==='POST'){await limited(db,'erase:'+s.id,40);return J({ok:true,deleted:await eraseSession(env,db,salon,s)});}
  if(route==='finish'&&req.method==='POST'){
   // A kiosk is a shared device: never reuse the previous customer's token or QR pairings.

@@ -1,7 +1,7 @@
 // In-store phone -> kiosk photo pairing. The kiosk (a shared touch screen) shows a QR code; the bride opens it on her own phone,
 // takes or picks her full-length photo, and it lands in THE KIOSK'S session only. No account, no app, nothing stays on her phone.
 import {must,Problem,limited} from './domain.js';
-import {putImage,imageType} from './storage.js';
+import {putImage,imageType,bucketFor} from './storage.js';
 
 const MIN=60000;
 const hex=n=>[...crypto.getRandomValues(new Uint8Array(n))].map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -46,8 +46,8 @@ export async function createPairing(db,salon,session,origin){
 }
 
 // The kiosk asks if a photo has arrived. A photo is reported once per arrival.
-export async function pairStatus(db,salon,session,seen){
- const p=await one(db,'SELECT media_id,received_at,expires_at FROM pairings WHERE session_id=? AND salon_id=? ORDER BY created_at DESC LIMIT 1',session.id,salon.id);
+export async function pairStatus(db,salon,session,seen,code=null){
+ const p=await one(db,'SELECT media_id,received_at,expires_at FROM pairings WHERE session_id=? AND salon_id=? AND (? IS NULL OR code=?) ORDER BY created_at DESC LIMIT 1',session.id,salon.id,code,code);
  if(!p)return {state:'none'};
  if(p.media_id&&p.media_id!==seen)return {state:'received',media_id:p.media_id};
  return {state:p.expires_at>Date.now()?'waiting':'expired'};
@@ -70,7 +70,13 @@ export async function pairUpload(env,req,code){
   const bytes=new Uint8Array(await req.arrayBuffer());must(bytes.length>100,'فایل عکس نیست');must(['image/jpeg','image/png','image/webp'].includes(imageType(bytes)),'فقط JPG، PNG یا WebP');
   const salon={id:p.salon_id};
   const id=await putImage(env,salon,{id:p.session_id},bytes,'original');
-  await run(env.DB,'UPDATE pairings SET media_id=?,received_at=? WHERE code=?',id,Date.now(),code);
+  const now=Date.now();
+  const receipt=await run(env.DB,'UPDATE pairings SET media_id=?,received_at=? WHERE code=? AND expires_at>?',id,now,code,now);
+  if(!receipt.meta.changes){
+   await bucketFor(env).delete(salon.id+'/'+id);
+   await run(env.DB,'DELETE FROM media WHERE id=?',id);
+   throw new Problem(409,'این کد دیگر فعال نیست؛ از صفحهٔ مزون کد تازه بگیر و عکس را دوباره بفرست');
+  }
   return new Response(JSON.stringify({ok:true}),{headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
  }catch(e){const s=e instanceof Problem?e.status:500;return new Response(JSON.stringify({error:e instanceof Problem?e.message:'خطای داخلی'}),{status:s||500,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}})}
 }

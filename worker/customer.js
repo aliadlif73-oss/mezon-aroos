@@ -1774,28 +1774,45 @@ function acceptPhoto(id){
 }
 // The kiosk shows a QR; the bride scans it with her own phone, takes the photo there, and it appears here.
 function openPhonePair(){
- var seen='',timer=0,stopped=false;
+ var code='',timer=0,stopped=false,failures=0;
  var panel=el('div',{class:'sheet__panel'});
  function stop(){stopped=true;clearTimeout(timer)}
  panel.append(el('div',{class:'sheet__head'},[h('h2','انتخاب عکس از گالری گوشی'),el('button',{class:'sheet__x',type:'button','aria-label':'بستن',text:'×',onclick:function(){stop();closeSheet()}})]));
  var box=el('div',{class:'qr'},[h('p','در حال ساخت کد…','qr__note')]);
- panel.append(box,el('ol',{class:'pairsteps'},[el('li',{text:'کد QR را با گوشی مشتری اسکن کنید'}),el('li',{text:'عکس تمام‌قد را از گالری گوشی انتخاب و ارسال کنید'}),el('li',{text:'عکس خودکار روی همین نمایشگر مزون ظاهر می‌شود'})]));
+ var status=el('p',{role:'status',class:'qr__note'});
+ panel.append(box,status,el('ol',{class:'pairsteps'},[el('li',{text:'کد QR را با گوشی مشتری اسکن کنید'}),el('li',{text:'عکس تمام‌قد را از گالری گوشی انتخاب و ارسال کنید'}),el('li',{text:'عکس خودکار روی همین نمایشگر مزون ظاهر می‌شود'})]));
  openSheet(panel);
- var pairDialog=$('#sheet');if(pairDialog)pairDialog.addEventListener('close',stop,{once:true});
- function poll(){
-  if(stopped)return;
-  api('pair/check?seen='+encodeURIComponent(seen)).then(function(d){
-   if(stopped)return;
-   if(d.state==='received'){stop();closeSheet();acceptPhoto(d.media_id);return}
-   if(d.state==='none'){stop();box.replaceChildren(notice('warn','اتصال این صفحه قطع شده است. دوباره کد بگیرید.'),el('button',{class:'btn btn--primary',type:'button',text:'ساخت کد جدید',onclick:function(){closeSheet();openPhonePair()}}));return}
-   if(d.state==='expired'){box.replaceChildren(notice('warn','کد منقضی شد.'),el('button',{class:'btn btn--primary',type:'button',text:'کد تازه',onclick:function(){stop();closeSheet();openPhonePair()}}));return}
-   timer=setTimeout(poll,2000);
-  }).catch(function(){timer=setTimeout(poll,4000)});
+ var pairDialog=$('#sheet');
+ function active(){return !stopped&&panel.isConnected&&pairDialog.open}
+ function restart(text){
+  stop();status.textContent='';
+  box.replaceChildren(notice('warn',text),el('button',{class:'btn btn--primary',type:'button',text:'ساخت کد تازه',onclick:openPhonePair}));
  }
- ensureSession().then(function(){return api('pair',{v:VISITOR})}).then(function(d){
+ function poll(){
+  if(!active())return;
+  api('pair/check?code='+encodeURIComponent(code)).then(function(d){
+   if(!active())return;
+   if(d.state==='received'&&d.media_id){stop();closeSheet();acceptPhoto(d.media_id);return}
+   if(d.state==='none'){restart('این کد دیگر فعال نیست. کد تازه بگیرید.');return}
+   if(d.state==='expired'){restart('کد منقضی شد. کد تازه بگیرید.');return}
+   if(d.state!=='waiting')throw new Error('Invalid pairing status');
+   failures=0;status.textContent='';
+   timer=setTimeout(poll,2000);
+  }).catch(function(e){
+   if(!active())return;
+   if(e.status===401||e.status===403||e.status===410){
+    state.session=false;restart('نشست مزون قطع شده است. کد تازه بگیرید.');return;
+   }
+   if(++failures>=2)status.textContent='ارتباط نمایشگر با سرور برقرار نیست. در حال تلاش دوباره…';
+   timer=setTimeout(poll,4000);
+  });
+ }
+ ensureSession().then(function(){return active()?api('pair',{v:VISITOR}):null}).then(function(d){
+  if(!active()||!d)return;
+  code=d.code;
   box.replaceChildren(el('div',{class:'qr__code',dir:'ltr',html:qrSvg(d.url)}),h('p','لینک اختصاصی این نشست، ۱۵ دقیقه معتبر است. پس از ارسال عکس، تصویر خودکار به همین صفحه منتقل می‌شود.','qr__note'));
   poll();
- }).catch(function(e){stop();box.replaceChildren(notice('danger',e.message||'ساخت کد ممکن نشد'))});
+ }).catch(function(e){if(active()){stop();box.replaceChildren(notice('danger',e.message||'ساخت کد ممکن نشد'))}});
 }
 function changePhoto(){clearTimeout(state.advT);state.justUploaded=false;state.original=null;state.preview=null;state.result=null;renderFlow();renderSteps();renderDock()}
 function nearestRatio(r){var R=[['1:1',1],['4:5',.8],['3:4',.75],['2:3',.667],['9:16',.5625],['5:4',1.25],['4:3',1.333],['3:2',1.5],['16:9',1.778]];var best=R[0];R.forEach(function(x){if(Math.abs(Math.log(x[1]/r))<Math.abs(Math.log(best[1]/r)))best=x});return best[0]}

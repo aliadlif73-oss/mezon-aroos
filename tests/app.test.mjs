@@ -967,6 +967,32 @@ test('phone -> kiosk pairing: QR code, public phone page, photo lands only in th
  const cust=await app.fetch(new Request(origin+'/s/salon-a?kiosk=1'),e);const ch=await cust.text();assert.match(ch,/openPhonePair/);assert.match(ch,/function checkPhoto/);
 });
 
+test('QR upload cannot report success after its code is replaced during storage',async()=>{
+ const e=fixture(),s=await salon(e),g=await guest(e,s);
+ const originPath='/api/s/salon-a/pair';
+ const first=await call(e,originPath,{},g);
+ const put=e.BUCKET.put;
+ let replacement;
+ e.BUCKET.put=async(...args)=>{
+  await put(...args);
+  replacement=await call(e,originPath,{},g);
+ };
+ const sent=await app.fetch(new Request(origin+'/u/'+first.data.code+'/photo',{method:'POST',body:png()}),e);
+ assert.equal(sent.status,409);
+ assert.equal(replacement.status,200);
+ assert.equal(e.BUCKET.objects.size,0);
+ assert.equal(e.DB.sql.prepare('SELECT COUNT(*) AS n FROM media').get().n,0);
+ assert.equal((await call(e,originPath+'/check?code='+first.data.code,undefined,g)).data.state,'none');
+ assert.equal((await call(e,originPath+'/check?code='+replacement.data.code,undefined,g)).data.state,'waiting');
+ e.BUCKET.put=put;
+ const retried=await app.fetch(new Request(origin+'/u/'+replacement.data.code+'/photo',{method:'POST',body:png()}),e);
+ assert.equal(retried.status,200);
+ const received=await call(e,originPath+'/check?code='+replacement.data.code,undefined,g);
+ assert.equal(received.data.state,'received');
+ const photo=await app.fetch(new Request(origin+'/api/s/salon-a/media/'+received.data.media_id,{headers:{Cookie:g.cookie}}),e);
+ assert.equal(photo.status,200);
+});
+
 test('a salon can set sale/rent, price and stock per dress; customers see them, junk is dropped',async()=>{
  const e=tgEnv(fixture()),s=await salon(e);
  const id=(await call(e,'/api/s/salon-a/owner/portfolio/add',{media_id:await ownerPortfolio(e,s),title:'لباس قیمت‌دار'},OWNER)).data.id;
