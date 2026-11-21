@@ -27,9 +27,9 @@ test('the salon camera remains available and does not fall back to the old galle
 test('QR upload lands in this visitor session, photo is checked, polling stops on close',()=>{
  const html=customerHTML;
  assert.match(html,/api\('pair',\{v:VISITOR\}\)/);
- assert.match(html,/api\('pair\/check\?seen='/);
- assert.match(html,/if\(d\.state==='received'\)\{stop\(\);closeSheet\(\);acceptPhoto\(d\.media_id\)/);
- assert.match(html,/pairDialog\.addEventListener\('close',stop,\{once:true\}\)/);
+ assert.match(html,/api\('pair\/check\?code='/);
+ assert.match(html,/if\(d\.state==='received'&&d\.media_id\)\{stop\(\);closeSheet\(\);acceptPhoto\(d\.media_id\)/);
+ assert.match(html,/panel\.isConnected&&pairDialog\.open/);
  assert.match(html,/QR را با گوشی مشتری اسکن کنید/);
  assert.match(html,/عکس خودکار روی همین نمایشگر مزون ظاهر می‌شود/);
  assert.match(html,/function acceptPhoto\(id\)/);
