@@ -834,9 +834,9 @@ function openAbout(){
 
 /* ---------- steps ---------- */
 // What one fitting keeps (the tour saves and restores it).
-var VIEW_FIELDS=['step','original','preview','ratio','reference','refTitle','style','tab','result','gen','genState','views','viewsIdem','idem','filter','error','justUploaded','genT0'];
+var VIEW_FIELDS=['mix','step','original','preview','ratio','reference','refTitle','style','tab','result','gen','genState','views','viewsIdem','idem','filter','error','justUploaded','genT0'];
 function hasLineWork(){return (state.pub&&state.pub.portfolio||[]).some(function(p){return (p.published||p.try_on)&&(p.line||'dress')==='dress'})}
-function viewDefaults(){return {step:1,original:null,preview:null,ratio:'',reference:null,refTitle:'',style:null,tab:hasLineWork()?'salon':'catalog',result:null,gen:null,genState:null,views:null,viewsIdem:null,idem:null,filter:'همه',error:'',justUploaded:false,genT0:0}}
+function viewDefaults(){return {mix:{bodice:0,skirt:0,sleeves:0,neckline:0},step:1,original:null,preview:null,ratio:'',reference:null,refTitle:'',style:null,tab:hasLineWork()?'salon':'catalog',result:null,gen:null,genState:null,views:null,viewsIdem:null,idem:null,filter:'همه',error:'',justUploaded:false,genT0:0}}
 function viewData(){var o={};VIEW_FIELDS.forEach(function(f){o[f]=state[f]});return o}
 function LP(){return LINES.photo.dress}
 function lineCat(){return LINES.dress}
@@ -1012,7 +1012,7 @@ function stepModel(){
  if(!tabs.some(function(x){return x[0]===state.tab}))state.tab='salon';
  tabs.forEach(function(x){
   var b=el('button',{type:'button',role:'tab','data-tab':x[0],'aria-selected':state.tab===x[0]?'true':'false',text:x[0]==='mix'?'لباس انتخابی من':TAB_LABEL.dress[x[1]]});
-  b.addEventListener('click',function(){if(state.tab!==x[0]){state.tab=x[0];state.idem=null;state.result=null;state.error='';renderFlow();renderDock()}});
+  b.addEventListener('click',function(){if(state.tab!==x[0]){state.tab=x[0];state.reference=null;state.refTitle='';state.style=null;state.idem=null;state.gen=null;state.result=null;state.error='';renderFlow();renderDock()}});
   seg.append(b);
  });
  if(tabs.length>1)box.append(seg);
@@ -1123,14 +1123,14 @@ function build(){
  go(3);generate();
 }
 function renderDockSoon(){clearTimeout(renderDockSoon.t);renderDockSoon.t=setTimeout(function(){renderDock();var b=$('#flow .btn--build');if(b){var c=canGenerate(),r=hasChoice();b.innerHTML=buildLabel(c);b.disabled=!r;var hn=$('#flow .build-hint');if(hn)hn.textContent=buildHint(r,c,quotaLeft())}},60)}
-function hasChoice(){return !!state.original&&(state.tab==='mix'?!!state.pub.mix_enabled:(state.style!==null||!!state.reference))}
-function canGenerate(){return hasChoice()&&!!state.pub.generation&&(state.tab!=='mix'||!!state.pub.mix_enabled)&&(!state.reference||state.tab==='mix'||!!state.pub.reference)&&quotaLeft()!==0}
+function hasChoice(){return !!state.original&&(state.tab==='mix'?!!state.pub.mix_enabled:state.tab==='salon'?!!state.reference&&!!state.refTitle:state.tab==='upload'?!!state.reference&&!state.refTitle:state.tab==='catalog'?state.style!==null:false)}
+function canGenerate(){return hasChoice()&&!!state.pub.generation&&(state.tab!=='mix'||!!state.pub.mix_enabled)&&(state.tab!=='upload'||!!state.pub.reference)&&quotaLeft()!==0}
 function missingReason(){
  if(!state.original)return 'اول عکس خودت را اضافه کن';
  if(state.tab==='mix'&&!state.pub.mix_enabled)return 'طراحی ترکیبی برای این مزون فعال نشده؛ فقط پلن ۳ یا ۶ ماهه مجاز است';
  if(quotaLeft()===0)return quotaOut();
  if(!state.pub.generation)return 'تولید شبیه‌سازی برای این مزون فعال نیست؛ می‌توانی درخواست بررسی بفرستی';
- if(state.reference&&!state.pub.reference)return 'انتقال عکس مرجع هنوز فعال نشده است';
+ if(state.tab==='upload'&&state.reference&&!state.pub.reference)return 'انتقال عکس مرجع هنوز فعال نشده است';
  return 'یک لباس انتخاب کن';
 }
 // Before/after: the line sits exactly under the finger. Positions are physical (left→right)
