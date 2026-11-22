@@ -1,0 +1,24 @@
+name: Check marketer panel
+on:
+  pull_request:
+    paths:
+      - 'worker/**'
+      - 'drizzle/**'
+      - 'tests/**'
+      - '.github/workflows/sales-check.yml'
+  push:
+    branches:
+      - feature/marketer-panel-20261122
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
