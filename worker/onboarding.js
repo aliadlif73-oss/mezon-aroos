@@ -265,8 +265,10 @@ export async function processDue(env,{origin='',limit=5}={}){
    try{
     const P=PLATFORMS[r.platform];
     if(!P||!platformReady(env,r.platform)){await finish('skipped','platform not configured');continue}
-    // Even older forced promo rows must not reach a linked salon or staff account.
-    if(await one(db,'SELECT 1 AS x FROM salons WHERE '+P.col+'=? UNION SELECT 1 FROM team WHERE '+P.col+'=? AND active=1',r.chat_id,r.chat_id)){await finish('skipped','already a salon chat');continue}
+    // Even older forced promo rows must not reach a linked salon, staff, or system-owner chat.
+    const linked=await one(db,'SELECT 1 AS x FROM salons WHERE '+P.col+'=? UNION SELECT 1 FROM team WHERE '+P.col+'=? AND active=1',r.chat_id,r.chat_id);
+    const owner=await one(db,'SELECT 1 AS x FROM owner_chats WHERE platform=? AND chat_id=?',r.platform,r.chat_id);
+    if(linked||owner){await finish('skipped','management chat');continue}
     try{await sendIntro(env,r.platform,r.chat_id,origin);await finish('sent');sent++}
     catch(e){
      const msg=String(e?.message||e);
