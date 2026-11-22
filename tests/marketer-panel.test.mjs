@@ -11,7 +11,7 @@ const owner={'origin':origin,'oai-authenticated-user-id':'owner-a','oai-authenti
 const migrations=readdirSync(new URL('../drizzle/',import.meta.url)).filter(f=>f.endsWith('.sql')).sort();
 function fixture(){
  const DB=database();for(const f of migrations)DB.sql.exec(readFileSync(new URL('../drizzle/'+f,import.meta.url),'utf8'));
- return {DB,KV:memoryBucket(),OWNER_EMAIL:'owner@test',TRUST_PLATFORM_IDENTITY:'true',APP_ORIGIN:origin,TELEGRAM_BOT_TOKEN:'bot:test',TELEGRAM_BOT_USERNAME:'ayneh_bot',TELEGRAM_WEBHOOK_SECRET:'secret'};
+ return {DB,BUCKET:memoryBucket(),OWNER_EMAIL:'owner@test',TRUST_PLATFORM_IDENTITY:'true',APP_ORIGIN:origin,TELEGRAM_BOT_TOKEN:'bot:test',TELEGRAM_BOT_USERNAME:'ayneh_bot',TELEGRAM_WEBHOOK_SECRET:'secret'};
 }
 async function call(env,path,body,headers={}){
  const init={method:body===undefined?'GET':'POST',headers:{origin,...headers}};
