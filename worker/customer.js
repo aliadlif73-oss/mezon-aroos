@@ -1244,7 +1244,7 @@ function filtersRow(opts,cur,onPick){
 
 
 function lookName(){
- if(state.tab==='mix')return 'لباس ترکیبی طراحی‌شده';
+ if(state.tab==='mix')return 'طرح ترکیبی — '+['bodice','skirt','sleeves','neckline'].map(function(k){return MIX_LABELS[k]+': '+MIX_PARTS[k][state.mix[k]][0]}).join(' | ');
  if(state.reference)return state.refTitle?'«'+state.refTitle+'» از لباس‌های مزون':'عکس لباس دلخواه';
  return state.style!==null?lineCat().styles[state.style][0]:'';
 }
