@@ -654,7 +654,7 @@ function home(){return api('/api/owner').then(function(d){
   var prev=el('span',{class:'hint slug-preview'});si.closest('.field').append(prev);
   function show(){var v=si.value;prev.textContent=v?'صفحهٔ مشتری: '+location.host+'/s/'+v:''}
   si.addEventListener('input',function(){var c=si.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');if(c!==si.value)si.value=c;show()});show()})();
- $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard()]]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
+ $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard()]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
 })}
 function smsCard(sms){
  var st=function(ok,on,off){return el('li',{class:ok?'on':'off'},[el('span',{class:'dot',html:ok?IC.check:IC.dash}),h('span',ok?on:off)])};
