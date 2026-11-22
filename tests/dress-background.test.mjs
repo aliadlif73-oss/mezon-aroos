@@ -18,11 +18,11 @@ test('bridal studio transform segments the dress and fills with the same greige 
  assert.equal(output.format,'image/jpeg');
 });
 
-test('missing Images binding fails closed rather than publishing an unprocessed original',async()=>{
- await assert.rejects(normalizeDressPhoto({},original),/سرویس یکسان‌سازی/);
+test('missing Images binding keeps the original image and allows registration',async()=>{
+ assert.equal(await normalizeDressPhoto({},original),original);
 });
 
-test('bad transformations fail closed, preserving the current angle in the wizard',async()=>{
+test('bad transformations keep the original image instead of stopping registration',async()=>{
  const bad={IMAGES:{input(){return {transform(){return this},output(){return {response:async()=>new Response('error',{status:503})}}}}}};
- await assert.rejects(normalizeDressPhoto(bad,original),/حذف پس‌زمینه/);
+ assert.equal(await normalizeDressPhoto(bad,original),original);
 });
