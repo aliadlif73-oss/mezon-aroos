@@ -5,7 +5,7 @@ import {bucketFor,putImage,putVideo,maxUpload} from './storage.js';
 import {precheck,PHOTO_RULES} from './precheck.js';
 import {mobilesIn,customerLinks,applyLeadStatus,botReady,deliverLead,deliverPending,newLinkCode,setWebhook,inboxes,followLinks,PLATFORMS,platformReady,baleSecret,staffInvite,notifyConflict,expireStates} from './telegram.js';
 import {createPairing,pairStatus} from './pairing.js';
-import {normalizeDressSizes} from './dress-sizes.js';
+import {normalizeDressSizes,DRESS_SIZES} from './dress-sizes.js';
 import {BACKGROUNDS,bgOf} from './backgrounds.js';
 import {creditGate,creditsOf,adminAccounts,adminSetAccount,adminHandleRequest,panelApi,newToken,creditStatus,requestRecharge,weightsOf,setWeights,lowCreditCheck,ledger,rotateToken,adminLedger,NO_IMAGE_MSG} from './credits.js';
 import {mgrSlug,managerLogin,mgrCookie,clearMgrCookie,setManager,changePassword,forgotPassword,resetPassword} from './manager.js';
@@ -518,7 +518,7 @@ return new Response(object.body,{headers:base});}
   if(dailyLimit(cfg)>0&&!free)await limited(db,'generation:'+salon.id+':'+new Date().toISOString().slice(0,10),dailyLimit(cfg));if(demo&&!free)await limited(db,'demo:'+s.verified_phone,3,'امروز ۳ تصویر نمونه ساخته‌اید؛ فردا دوباره امتحان کنید یا صفحهٔ آزمایشی مزون خودتان را بسازید');if(!free)await spendTrialImage(db,trial,gate.weight);
   const id=uid(),now=Date.now();
   const mode=reference?'reference':'catalog';
-  await run(db,'INSERT INTO generations(id,salon_id,session_id,idem,state,original_id,reference_id,style,transfer,color,created_at,updated_at,line,opts,base_id,visitor) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,salon.id,s.id,b.idem,'creating',b.original_id,b.reference_id||null,reference?null:(Number.isInteger(b.style)?b.style:null),mode,'',now,now,line,JSON.stringify({ratio,sizes:cleanSizes(b.sizes)}),null,visitor);
+  await run(db,'INSERT INTO generations(id,salon_id,session_id,idem,state,original_id,reference_id,style,transfer,color,created_at,updated_at,line,opts,base_id,visitor) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',id,salon.id,s.id,b.idem,'creating',b.original_id,b.reference_id||null,reference?null:(Number.isInteger(b.style)?b.style:null),mode,'',now,now,line,JSON.stringify({ratio,sizes:cleanSizes(b.sizes),dress_size:DRESS_SIZES.includes(String(b.dress_size||''))?String(b.dress_size):null}),null,visitor);
   if(!free)await afterCharge(env,db,salon,s,visitor,line,env.APP_ORIGIN||u.origin,!!trial||demo);
   let sent=false;try{
    const images=[await uploadProvider(env,original)];for(const a of angles)images.push(await uploadProvider(env,a));
