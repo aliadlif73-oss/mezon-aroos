@@ -159,7 +159,7 @@ async function handle(req,env,p,exec){
   if(textIn.startsWith('/find ')){await findCustomer(ctx,textIn.slice(6));return J({ok:true})}
   if(textIn==='/link'&&botOnly(env)){await ctx.say('ارسال لینک مشتری غیرفعال است.');return J({ok:true})}
    if(textIn==='/link'){await managerLink(ctx);return J({ok:true})}
-  if(textIn==='/team'){await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);await sendTeam(ctx);return J({ok:true})}
+  if(textIn==='/team'){const draft=parse(salon.bot_state);if(draft.dressUpload){await ctx.say('ثبت لباس هنوز تمام نشده است. ابتدا ثبت را با انتخاب سایزها تکمیل کنید یا /cancel را بزنید، بعد /team را باز کنید.');return J({ok:true})}await run(db,"UPDATE salons SET bot_state='' WHERE id=?",salon.id);await sendTeam(ctx);return J({ok:true})}
   if(textIn==='/help'){await ctx.say(help(salon.name,inviteReady(env),PLATFORMS[p]),{parse_mode:'HTML'});return J({ok:true})}
   if(textIn==='/list'){await sendList(ctx);return J({ok:true})}
   if(textIn==='/share'&&botOnly(env)){await ctx.say('ارسال لینک مشتری غیرفعال است.');return J({ok:true})}
@@ -354,7 +354,7 @@ async function linkStaff(ctx,t){
 }
 async function staffMessage(ctx,m,textIn){
  const t=ctx.staff;
- if(textIn==='/help'||textIn==='/link'){if(textIn==='/link'){await ctx.say('لینک معرفی اختصاصی خودتان:\n'+refUrl(ctx.origin,ctx.salon,t));return}await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
+ if(textIn==='/help'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}\n  if(textIn==='/link'&&!botOnly(ctx.env)){await ctx.say('لینک معرفی اختصاصی خودتان:\n'+refUrl(ctx.origin,ctx.salon,t));return}
   if(botOnly(ctx.env)&&['/link','/share','/setup'].includes(textIn)){await ctx.say('این قابلیت غیرفعال است؛ تنظیمات فقط از ادمین آینه انجام می‌شوند.');return}
   if(botOnly(ctx.env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return}
   const draft=parse(ctx.salon.bot_state);if(botOnly(ctx.env)&&draft.dressUpload&&draft.chat===ctx.chat&&draft.p===ctx.p){if(!draft.ts||Date.now()-draft.ts>STALE)await expireState(ctx.env,ctx.salon,draft,ctx);else await dressReply(ctx,draft,m,textIn);return}
@@ -491,6 +491,8 @@ export async function expireStates(env,now=Date.now()){
 
 /* ---------- a bride talking to the bot: she sends a photo, gets a personal link, gets the picture back ---------- */
 async function customerStart(ctx,slug){
+ // Never allow a linked salon manager or staff chat to become a bride chat.
+ if(await actorByChat(ctx.db,ctx.p,ctx.chat)){await ctx.say('این حساب به مدیریت مزون متصل است. برای تجربه مشتری، از حساب تلگرام جداگانه استفاده کنید.');return}
  const salon=await one(ctx.db,'SELECT id,slug,name FROM salons WHERE slug=?',slug);
  if(!salon){await ctx.say('این مزون پیدا نشد؛ لینک را دوباره از مزون بگیرید.');return}
  await run(ctx.db,'INSERT INTO bot_customers(platform,chat_id,salon_id,name,created_at) VALUES(?,?,?,?,?) ON CONFLICT(platform,chat_id) DO UPDATE SET salon_id=excluded.salon_id,name=excluded.name,created_at=excluded.created_at',ctx.p,ctx.chat,salon.id,ctx.name,Date.now());
