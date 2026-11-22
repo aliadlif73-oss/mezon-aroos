@@ -630,6 +630,12 @@ function marketersCard(){
    return el('div',{class:'salon'},[
     el('div',{class:'grow'},[h('strong',u.name),h('small','نام کاربری: '+u.username+' — '+fa(u.salons)+' مزون · '+fa(u.demos)+' دمو · '+fa(u.negotiating)+' مذاکره · '+fa(u.won)+' فروش ثبت‌شده')]),
     badge(on?'فعال':'غیرفعال',on?'ok':'danger'),
+    el('button',{class:'btn btn--soft btn--sm',type:'button',text:'اعتبار اولیه: '+fa(u.initial_credits||10)+' عکس',onclick:act(function(){
+     var v=prompt('تعداد اعتبار اولیه هر مزون جدید برای '+u.name+' (۱ تا ۵۰۰)',String(u.initial_credits||10));
+     if(v===null)return;
+     var n=Number(v);if(!Number.isInteger(n)||n<1||n>500)throw Error('عددی بین ۱ تا ۵۰۰ بنویسید');
+     return api('/api/sales/admin/credits',{id:u.id,initial_credits:n}).then(function(){toast('اعتبار اولیه مزون‌های جدید تنظیم شد');return load()});
+    })}),
     el('button',{class:'btn btn--ghost btn--sm',type:'button',text:on?'غیرفعال کردن':'فعال کردن',onclick:act(function(){if(!confirm((on?'دسترسی «':'فعال‌سازی «')+u.name+'» تأیید شود؟'))return;return api('/api/sales/admin/status',{id:u.id,active:!on}).then(load)})}),
     el('button',{class:'btn btn--soft btn--sm',type:'button',text:'رمز جدید',onclick:act(function(){if(!confirm('رمز قبلی '+u.name+' باطل شود؟'))return;return api('/api/sales/admin/reset',{id:u.id}).then(function(r){
      secret.style.display='block';secret.replaceChildren(h('b','رمز جدید «'+u.name+'»؛ فقط یک بار نمایش داده می‌شود'),el('pre',{style:'white-space:pre-wrap',text:'نام کاربری: '+u.username+'\nرمز: '+r.password}),el('button',{class:'btn btn--soft btn--sm',type:'button',text:'کپی رمز',onclick:function(){navigator.clipboard&&navigator.clipboard.writeText(r.password).then(function(){toast('کپی شد')})}}));return load();
@@ -637,9 +643,56 @@ function marketersCard(){
    ]);
   }));if(!(d.users||[]).length)rows.append(h('p','هنوز بازاریابی ساخته نشده است.','muted'));
  })}
- root.append(h('h2','مدیریت بازاریاب‌ها'),h('p','بازاریاب فقط مزون‌هایی را می‌بیند که خودش ثبت کرده؛ به حساب مالی، اطلاعات سایر مزون‌ها، تنظیمات هوش مصنوعی یا ادمین دسترسی ندارد.','lead'),
+ root.append(h('h2','مدیریت بازاریاب‌ها'),h('p','بازاریاب فقط مزون‌های خودش و مشتریان همان مزون را به‌صورت فقط‌خواندنی می‌بیند؛ به حساب مالی، مشتریان سایر مزون‌ها، تنظیمات هوش مصنوعی یا ادمین دسترسی ندارد.','lead'),
  el('a',{class:'btn btn--ghost',href:'/sales',target:'_blank',rel:'noopener',text:'مشاهده صفحه ورود بازاریاب'}),el('div',{class:'team__add'},[name,user,password]),create,secret,h('h3','کاربران بازاریابی'),rows);
  load().catch(function(e){rows.append(h('p',e.message,'notice notice--warn'))});
+ return root;
+}
+
+
+function marketerBotApprovalsCard(){
+ var section=el('section',{class:'card stack'}),rows=el('div',{class:'stack'}),refresh=el('button',{class:'btn btn--ghost btn--sm',type:'button',text:'بازخوانی',onclick:act(function(){return load()})});
+ function load(){return api('/api/sales/admin/pending-bots').then(function(d){
+  rows.replaceChildren.apply(rows,(d.salons||[]).map(function(s){
+   var linked=s.telegram||s.bale;
+   return el('div',{class:'salon'},[
+    el('div',{class:'grow'},[h('strong',s.name),h('small',s.slug+' · بازاریاب: '+s.marketer)]),
+    badge(linked?'ربات متصل است':s.bot_link_approved?'مجوز اتصال صادر شده':'نیازمند تأیید',linked||s.bot_link_approved?'ok':'warn'),
+    linked?null:el('button',{class:'btn btn--soft btn--sm',type:'button',text:s.bot_link_approved?'لغو مجوز':'تأیید ساخت لینک ربات',onclick:act(function(){
+     if(!confirm('وضعیت مجوز اتصال ربات برای «'+s.name+'» تغییر کند؟'))return;
+     return api('/api/sales/admin/bot-approve',{slug:s.slug,approved:!s.bot_link_approved}).then(function(){toast('مجوز ربات به‌روزرسانی شد');return load()});
+    })})
+   ]);
+  }));if(!d.salons.length)rows.append(h('p','هنوز مزون بازاریابی ثبت نشده است.','muted'));
+ })}
+ section.append(h('h2','تأیید لینک ربات مزون‌ها'),h('p','صفحه مزون و اعتبارش در لحظه ساخته می‌شود؛ ولی لینک اتصال مدیر مزون تنها بعد از تأیید این بخش در اختیار بازاریاب قرار می‌گیرد.','lead'),refresh,rows);
+ load().catch(function(e){rows.append(h('p',e.message,'notice notice--warn'))});
+ return section;
+}
+function marketerPricingCard(){
+ var root=el('section',{class:'card stack'}),form=el('div',{class:'stack'}),cfg=null;
+ function load(){return api('/api/sales/admin/pricing').then(function(d){
+  cfg=d.pricing;
+  var campaign=field('pcampaign','عنوان کمپین',cfg.campaign||'');
+  var end=field('pend','پایان کمپین (زمان محلی مرورگر)',cfg.campaign_end?new Date(cfg.campaign_end-new Date(cfg.campaign_end).getTimezoneOffset()*60000).toISOString().slice(0,16):'','datetime-local');
+  var rows=cfg.plans.map(function(p,i){return el('section',{class:'port-add stack'},[
+   h('h3',p.name),
+   el('div',{class:'grid grid--2'},[
+    field('pbase'+i,'قیمت اصلی به تومان',String(p.base),'number'),
+    field('ppromo'+i,'قیمت کمپین (خالی = بدون تخفیف)',p.promo===null?'':String(p.promo),'number'),
+    field('pgift'+i,'عکس هدیه (خالی = نامشخص)',p.gift===null?'':String(p.gift),'number'),
+    field('pname'+i,'نام پلن',p.name)
+   ]),
+   field('pfeatures'+i,'ویژگی‌ها؛ هر خط یک ویژگی',(p.features||[]).join('\n'),'area')
+  ])});
+  var save=el('button',{class:'btn btn--primary',type:'button',text:'ذخیره تعرفه‌های بازاریاب',onclick:act(function(){
+   var plans=cfg.plans.map(function(p,i){return {id:p.id,name:$('#pname'+i).value,base:Number($('#pbase'+i).value),promo:$('#ppromo'+i).value===''?null:Number($('#ppromo'+i).value),gift:$('#pgift'+i).value===''?null:Number($('#pgift'+i).value),features:$('#pfeatures'+i).value.split('\n').map(function(x){return x.trim()}).filter(Boolean)}});
+   return api('/api/sales/admin/pricing',{campaign:$('#pcampaign').value,campaign_end:$('#pend').value?new Date($('#pend').value).getTime():null,plans:plans}).then(function(){toast('تعرفه‌ها و امکانات به‌روزرسانی شد');return load()});
+  })});
+  form.replaceChildren(campaign,end,...rows,save);
+ })}
+ root.append(h('h2','تعرفه و امکانات قابل نمایش به بازاریاب'),h('p','قیمت‌ها و هدایا فقط توسط ادمین تغییر می‌کنند. پایان کمپین که برسد، قیمت پایه خودکار نمایش داده می‌شود. مبلغ‌ها تومان هستند.','lead'),form);
+ load().catch(function(e){form.append(h('p',e.message,'notice notice--warn'))});
  return root;
 }
 
@@ -654,7 +707,7 @@ function home(){return api('/api/owner').then(function(d){
   var prev=el('span',{class:'hint slug-preview'});si.closest('.field').append(prev);
   function show(){var v=si.value;prev.textContent=v?'صفحهٔ مشتری: '+location.host+'/s/'+v:''}
   si.addEventListener('input',function(){var c=si.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');if(c!==si.value)si.value=c;show()});show()})();
- $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard()]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
+ $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard(),marketerBotApprovalsCard(),marketerPricingCard()]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
 })}
 function smsCard(sms){
  var st=function(ok,on,off){return el('li',{class:ok?'on':'off'},[el('span',{class:'dot',html:ok?IC.check:IC.dash}),h('span',ok?on:off)])};
