@@ -260,11 +260,11 @@ test('linked chat: plain /start shows the welcome with the panel button instead 
   assert.equal(w.text,ob.WELCOME_TEXT);assert.equal(rows.length,4);
   assert.equal(rows[0].callback_data,'ob:panel');assert.equal(rows[0].text,ob.BTN.panel);assert(!rows.some(b=>b.callback_data==='ob:login'));
   assert.deepEqual(rows.slice(1).map(b=>b.url||b.callback_data),[origin+'/register','ob:guide',origin+'/s/demo']);assert.deepEqual(w.reply_markup.inline_keyboard.map(r=>r.length),[1,1,2]);
-  assert.equal(queue(env).length,1);assert.equal(queue(env)[0].kind,'introf');
+  assert.equal(queue(env).length,0,'linked chats must not receive queued advertising');
   bots.calls.length=0;await press(tgHook,env,6001,'ob:panel');
   assert(/راهنمای مدیر مزون/.test(bots.last('sendMessage').text));
-  // the video is NOT skipped for a linked chat
-  env.DB.sql.prepare('UPDATE promo_queue SET due_at=0').run();assert.equal(await ob.processDue(env,{origin}),1);assert.equal(bots.of('sendVideo').length,1);
+  // a linked chat must never receive the advertising video
+  assert.equal(await ob.processDue(env,{origin}),0);assert.equal(bots.of('sendVideo').length,0);
   // unlinked chat still gets the login button; a bad code is unchanged
   bots.calls.length=0;await say(tgHook,env,6002,'/start');assert.equal(bots.last('sendMessage').reply_markup.inline_keyboard.flat().find(b=>b.callback_data==='ob:login').callback_data,'ob:login');
   await say(tgHook,env,6002,'/start '+'b'.repeat(24));assert(/منقضی/.test(bots.last('sendMessage').text));
@@ -279,19 +279,17 @@ test('/welcome and /platform force the welcome + a fresh video even inside the 2
   await say(tgHook,env,7001,'/start');assert.equal(queue(env).length,1);
   await say(tgHook,env,7001,'/start');assert.equal(queue(env).length,1,'plain /start is still deduped for a normal chat');
   await say(tgHook,env,7001,'/welcome');assert.equal(bots.last('sendMessage').text,ob.WELCOME_TEXT);
-  let q=queue(env);assert.equal(q.length,1,'pending row replaced, not doubled');assert.equal(q[0].kind,'introf');
+  let q=queue(env);assert.equal(q.length,1,'pending row replaced, not doubled');assert.equal(q[0].kind,'intro');
   await say(tgHook,env,7001,'/platform');assert.equal(queue(env).length,1);
   await say(tgHook,env,7001,'/welcome@ayneh_bot');assert.equal(bots.last('sendMessage').text,ob.WELCOME_TEXT);
   // owner chat
   env.DB.sql.prepare("INSERT INTO owner_chats(platform,chat_id,created_at) VALUES('telegram','8001',?)").run(Date.now());
   bots.calls.length=0;await say(tgHook,env,8001,'/start');
   const w=bots.last('sendMessage');assert.equal(w.text,ob.WELCOME_TEXT);assert.equal(w.reply_markup.inline_keyboard[0][0].callback_data,'ob:panel');
-  assert.equal(queue(env).filter(r=>r.chat_id==='8001').length,1);
-  env.DB.sql.prepare("UPDATE promo_queue SET status='sent' WHERE chat_id='8001'").run();
-  await say(tgHook,env,8001,'/start');assert.equal(queue(env).filter(r=>r.chat_id==='8001').length,2,'owner bypasses the 24 h dedupe');
-  // next owner message delivers the overdue video without waiting for the throttle
-  env.DB.sql.prepare("UPDATE promo_queue SET due_at=0 WHERE chat_id='8001'").run();bots.calls.length=0;
-  await say(tgHook,env,8001,'سلام');assert.equal(bots.of('sendVideo').length,1);
+  assert.equal(queue(env).filter(r=>r.chat_id==='8001').length,0,'owner chat must not queue advertising');
+  await say(tgHook,env,8001,'/start');assert.equal(queue(env).filter(r=>r.chat_id==='8001').length,0);
+  bots.calls.length=0;
+  await say(tgHook,env,8001,'سلام');assert.equal(bots.of('sendVideo').length,0);
   // owner panel button shows the owner help; /help works for the unlinked owner chat
   bots.calls.length=0;await press(tgHook,env,8001,'ob:panel');assert(/گزارش‌های مزون آینه/.test(bots.last('sendMessage').text));
   await say(tgHook,env,8001,'/help');assert(/گزارش‌های مزون آینه/.test(bots.last('sendMessage').text));
