@@ -1,5 +1,6 @@
 import {DRESS_STYLES,LINE_FILTERS,LINE_PHOTO,LINE_LABEL} from './lines.js';
 import {SIZE_OPTIONS} from './dress-sizes.js';
+import {MIX_COLLECTION} from './bridal-mix.js';
 import {QR_JS} from './qr.js';
 import {PHOTO_CHECK_JS} from './pairing.js';
 import {SCENE_JS} from './scene.js';
@@ -691,7 +692,9 @@ var ICO={
  down:'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(180 12 12)"><path d="M7 10.5V20H4.2A1.2 1.2 0 0 1 3 18.8v-7.1a1.2 1.2 0 0 1 1.2-1.2H7zM7 10.5l3.4-7a2.1 2.1 0 0 1 2.1 2.2v3.6h5.1a2.1 2.1 0 0 1 2.1 2.4l-1.1 6.5A2.1 2.1 0 0 1 16.5 20H7"/></g></svg>',
  orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3.5c2 1.6 3.2 4.7 3.2 8.5s-1.2 6.9-3.2 8.5"/><path d="m18.6 13.8 2 1.6-2.3 1"/></svg>',
  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>',};
-var state={sz:{arm:'',bust:'',belly:''},dressSize:'',ratio:'',pub:null,step:1,original:null,reference:null,refTitle:'',style:null,tab:'salon',result:null,gen:null,genState:null,busy:false,error:'',session:false,verified:false,idem:null,rating:0,me:null};
+var MIX_PARTS=__MIX_PARTS__;
+var MIX_LABELS={bodice:'بالاتنه',skirt:'دامن',sleeves:'آستین',neckline:'یقه'};
+var state={mix:{bodice:0,skirt:0,sleeves:0,neckline:0},sz:{arm:'',bust:'',belly:''},dressSize:'',ratio:'',pub:null,step:1,original:null,reference:null,refTitle:'',style:null,tab:'salon',result:null,gen:null,genState:null,busy:false,error:'',session:false,verified:false,idem:null,rating:0,me:null};
 try{state.me=JSON.parse(localStorage.getItem('ayneh-me')||'null')}catch(e){}
 var $=function(s,r){return (r||document).querySelector(s)};
 var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -980,6 +983,18 @@ function dressSizeRow(){
  });
  wrap.append(options);return wrap;
 }
+function mixArt(kind,i){
+ var lace='<defs><linearGradient id="iv" x1="0" x2=".9" y1="0" y2="1"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#e9dfd0"/></linearGradient><pattern id="fl" width="16" height="17" patternUnits="userSpaceOnUse"><path d="M8 2q8 6 0 11Q0 8 8 2" fill="none" stroke="#bfae9d" stroke-width=".9"/><circle cx="8" cy="8" r="1" fill="#d0b7a2"/></pattern></defs>';
+ var torso='<path d="M66 33 Q74 25 84 34 L89 70 Q78 83 66 70 Z" fill="url(#iv)" stroke="#c8b5a7" stroke-width="1.4"/>';
+ var skirt=i===1?'<path d="M67 72L84 72Q79 108 89 124Q104 137 107 154L47 154Q57 135 65 122Q74 102 67 72Z" fill="url(#iv)" stroke="#c8b5a7"/>':i===2?'<path d="M67 72L84 72L111 153L41 153Z" fill="url(#iv)" stroke="#c8b5a7"/>':'<path d="M65 72L86 72Q110 107 134 155L18 155Q42 103 65 72Z" fill="url(#iv)" stroke="#c8b5a7"/>';
+ var body=kind==='skirt'?skirt:torso;
+ if(kind==='bodice'&&i===0)body+='<path d="M66 33Q75 28 84 34L88 69Q76 76 67 68Z" fill="url(#fl)" opacity=".8"/>';
+ if(kind==='bodice'&&i===2)body+='<g fill="#cab79c">'+Array.from({length:21},(_,n)=>'<circle cx="'+(69+n%4*4)+'" cy="'+(39+Math.floor(n/4)*5)+'" r="1.15"/>').join('')+'</g>';
+ if(kind==='sleeves')body+=i===2?'':i===0?'<path d="M66 34L59 39L49 88L58 90L69 47ZM84 34L94 39L104 88L96 90L80 47Z" fill="url(#fl)" stroke="#c8b5a7"/>':'<path d="M66 35Q40 20 44 52L57 79Q62 81 67 71L69 44ZM84 35Q110 18 109 52L97 79Q91 81 85 70L81 43Z" fill="#f4ece1" stroke="#c8b5a7"/>';
+ if(kind==='neckline'){var neck=i===0?'M67 36Q75 51 84 36':i===1?'M67 40L67 34L84 34L84 40':'M67 32L76 48L84 32';body+='<path d="'+neck+'" fill="none" stroke="#9e846d" stroke-width="3"/>'}
+ return '<svg viewBox="0 0 150 176" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="طرح لباس عروس"><rect width="150" height="176" rx="13" fill="#77716d"/><ellipse cx="75" cy="158" rx="43" ry="6" fill="#534d48" opacity=".27"/>'+lace+'<path d="M75 16v12m-6-6q6-7 12 0" fill="none" stroke="#d7c2af" stroke-width="2"/>'+body+'</svg>';
+}
+
 function stepModel(){
  var box=el('div',{class:'panel flow'});
  if(state.original){
@@ -990,11 +1005,11 @@ function stepModel(){
  box.append(sizesRow());
  if(quotaLeft()===0&&!state.tourDemo)box.append(notice('warn',quotaOut()));
  var seg=el('div',{class:'seg',role:'tablist'});
- var tabs=[['salon',0]];if(state.pub.catalog)tabs.push(['catalog',1]);if(state.pub.own_dress)tabs.push(['upload',2]);
+ var tabs=[['salon',0]];if(state.pub.catalog)tabs.push(['catalog',1]);if(state.pub.own_dress)tabs.push(['upload',2]);if(state.pub.mix_enabled)tabs.push(['mix',3]);
  if(!tabs.some(function(x){return x[0]===state.tab}))state.tab='salon';
  tabs.forEach(function(x){
-  var b=el('button',{type:'button',role:'tab','data-tab':x[0],'aria-selected':state.tab===x[0]?'true':'false',text:TAB_LABEL.dress[x[1]]});
-  b.addEventListener('click',function(){state.tab=x[0];renderFlow()});
+  var b=el('button',{type:'button',role:'tab','data-tab':x[0],'aria-selected':state.tab===x[0]?'true':'false',text:x[0]==='mix'?'لباس انتخابی من':TAB_LABEL.dress[x[1]]});
+  b.addEventListener('click',function(){if(state.tab!==x[0]){state.tab=x[0];state.idem=null;state.result=null;state.error='';renderFlow();renderDock()}});
   seg.append(b);
  });
  if(tabs.length>1)box.append(seg);
@@ -1048,6 +1063,24 @@ function stepModel(){
   });
   box.append(grid);
   if(state.style!==null&&!state.reference)box.append(pickedBar('لباس انتخابی: '+LIST[state.style][0],function(){pickLook(function(){state.style=null})}));
+ }else if(state.tab==='mix'){
+  box.append(h('p','مدل موردعلاقه‌ات را از هر قسمت انتخاب کن؛ طرح ترکیبی روی تصویر خودت ساخته می‌شود. این یک پیش‌نمایش طراحی است، نه تضمین امکان دوخت یا سایز واقعی.','hint'));
+  ['bodice','skirt','sleeves','neckline'].forEach(function(kind){
+   var wrap=el('section',{class:'mix-section'},[h('h3',MIX_LABELS[kind],'mix-section__title')]);
+   var grid=el('div',{class:'mix-options'});
+   (MIX_PARTS[kind]||[]).forEach(function(item,index){
+    var selected=state.mix[kind]===index;
+    var card=el('button',{type:'button',class:'mix-choice'+(selected?' is-on':''),'aria-pressed':selected?'true':'false'},[
+     el('span',{class:'mix-choice__preview',html:mixArt(kind,index)}),
+     el('span',{class:'mix-choice__name',text:item[0]}),
+     selected?el('span',{class:'mix-choice__check',html:ICO.check}):null
+    ]);
+    card.addEventListener('click',function(){state.mix[kind]=index;state.idem=null;state.result=null;renderFlow();renderDock()});
+    grid.append(card);
+   });
+   wrap.append(grid);box.append(wrap);
+  });
+  box.append(el('div',{class:'mix-footnote'},[h('b','طرح اختصاصی شما'),h('p','چهار انتخاب در یک خروجی ترکیب می‌شوند. هزینه تولید تصویر فقط هنگام زدن دکمه نهایی محاسبه می‌شود.')]));
  }else{
   if(!state.reference||state.refTitle){
    var input2=el('input',{type:'file',accept:'image/jpeg,image/png,image/webp',id:'pickref',class:'sr-only'});
@@ -1086,8 +1119,8 @@ function build(){
  go(3);generate();
 }
 function renderDockSoon(){clearTimeout(renderDockSoon.t);renderDockSoon.t=setTimeout(function(){renderDock();var b=$('#flow .btn--build');if(b){var c=canGenerate(),r=hasChoice();b.innerHTML=buildLabel(c);b.disabled=!r;var hn=$('#flow .build-hint');if(hn)hn.textContent=buildHint(r,c,quotaLeft())}},60)}
-function hasChoice(){return !!state.original&&(state.style!==null||!!state.reference)}
-function canGenerate(){return hasChoice()&&!!state.pub.generation&&(!state.reference||!!state.pub.reference)&&quotaLeft()!==0}
+function hasChoice(){return !!state.original&&(state.tab==='mix'&&!!state.pub.mix_enabled||state.style!==null||!!state.reference)}
+function canGenerate(){return hasChoice()&&!!state.pub.generation&&(state.tab==='mix'||!state.reference||!!state.pub.reference)&&quotaLeft()!==0}
 function missingReason(){
  if(!state.original)return 'اول عکس خودت را اضافه کن';
  if(quotaLeft()===0)return quotaOut();
@@ -1209,6 +1242,7 @@ function filtersRow(opts,cur,onPick){
 
 
 function lookName(){
+ if(state.tab==='mix')return 'لباس ترکیبی طراحی‌شده';
  if(state.reference)return state.refTitle?'«'+state.refTitle+'» از لباس‌های مزون':'عکس لباس دلخواه';
  return state.style!==null?lineCat().styles[state.style][0]:'';
 }
@@ -1884,9 +1918,9 @@ function generate(){
  ensureSession().then(function(){
   state.idem=state.idem||uuid();
   // The page's own note under «خودت را در لباس عروس ببین» says the photo is sent for the simulation; no extra checkbox.
-  return api('generate',{v:VISITOR,image_consent:true,sizes:sizesPayload(),dress_size:state.dressSize||undefined,idem:state.idem,ratio:state.ratio||undefined,original_id:state.original,reference_id:state.reference||undefined,style:state.reference?undefined:(state.style===null?undefined:state.style)});
+  return api('generate',{v:VISITOR,image_consent:true,sizes:sizesPayload(),dress_size:state.dressSize||undefined,idem:state.idem,ratio:state.ratio||undefined,original_id:state.original,...(state.tab==='mix'?{mix_parts:state.mix}:{reference_id:state.reference||undefined,style:state.reference?undefined:(state.style===null?undefined:state.style)})});
  }).then(function(job){
-  track('generate',state.reference?(state.refTitle?'salon':'upload'):'catalog');
+  track('generate',state.tab==='mix'?'mix':state.reference?(state.refTitle?'salon':'upload'):'catalog');
   spentQuota();
   state.gen=job.id;state.genState=job.state;state.step=3;
   try{sessionStorage.setItem('ayneh-job-'+SLUG,job.id)}catch(e){}
@@ -2957,5 +2991,5 @@ export const customerHTML=String.raw`<!doctype html><html lang="fa" dir="rtl"><h
 <dialog class="sheet" id="sheet" aria-label="پنجره"></dialog>
 <script>__JS__</script>
 </body></html>`
- .replace('__CSS__',()=>baseCSS+customerCSS+freshDemoCSS)
- .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__DRESS_SIZES__',()=>JSON.stringify(SIZE_OPTIONS)).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
+ .replace('__CSS__',()=>baseCSS+customerCSS+freshDemoCSS+"\n.mix-section{margin:18px 0}.mix-section__title{font-size:17px;margin:0 0 10px;color:var(--ink)}.mix-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mix-choice{position:relative;display:grid;gap:6px;text-align:center;border:1.5px solid #ded8d2;border-radius:15px;padding:7px;background:#fff;color:var(--ink);font:inherit;cursor:pointer}.mix-choice.is-on{border:2px solid #927656;box-shadow:0 0 0 2px #92765622}.mix-choice__preview{display:block;width:100%;aspect-ratio:5/6}.mix-choice__preview svg{width:100%;height:100%;display:block;border-radius:10px}.mix-choice__name{font-size:12px;font-weight:700;line-height:1.8}.mix-choice__check{position:absolute;left:8px;top:8px;color:#fff;background:#886944;border-radius:50%;width:25px;height:25px;display:grid;place-items:center}.mix-choice__check svg{width:15px;height:15px}.mix-footnote{background:#f7f4ef;padding:14px;border-radius:15px;margin:20px 0}.mix-footnote b{font-size:14px}.mix-footnote p{font-size:12px;margin:5px 0}\n")
+ .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__MIX_PARTS__',()=>JSON.stringify(MIX_COLLECTION)).replace('__DRESS_SIZES__',()=>JSON.stringify(SIZE_OPTIONS)).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
