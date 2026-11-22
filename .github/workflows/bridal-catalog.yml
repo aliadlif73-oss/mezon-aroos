@@ -1,0 +1,47 @@
+name: Generate bridal mix reference photos via KIE
+on:
+  push:
+    branches: [feature/bridal-mix-kie-16-gallery]
+    paths: ['.github/workflows/bridal-catalog.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: bridal-kie-catalog
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Set up image conversion
+        run: npm install --no-save sharp
+      - name: Validate source and client integration
+        run: npm test
+      - name: Generate 16 images with KIE API
+        id: generate
+        continue-on-error: true
+        env:
+          KIE_API_KEY: ${{ secrets.KIE_API_KEY }}
+        run: node scripts/generate-bridal-catalog.mjs
+      - name: Persist generated image files to branch
+        if: always() && steps.generate.outcome != 'skipped'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/bridal-mix/
+          if ! git diff --cached --quiet; then
+            git commit -m "assets: KIE 2K bridal catalog photos"
+            git push origin HEAD:feature/bridal-mix-kie-16-gallery
+          fi
+      - name: Validate complete image manifest
+        run: |
+          node --input-type=module -e "import {readFileSync,statSync} from 'node:fs';const m=JSON.parse(readFileSync('public/bridal-mix/manifest.json','utf8'));if(m.items.length!==16)throw Error('Expected 16 photos, received '+m.items.length);for(const v of m.items){if(statSync(v.file).size<25000)throw Error('Invalid '+v.file)};console.log('Verified 16 KIE reference images')"
+      - name: Confirm generation workflow
+        run: test "${{ steps.generate.outcome }}" = "success"
