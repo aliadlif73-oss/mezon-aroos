@@ -4,22 +4,26 @@ export const MIX_COLLECTION={
  bodice:[
   ['کرست دانتل گلدار','fitted bridal corset bodice in ivory, with delicate dimensional floral lace appliques and visible internal boning, opaque lining'],
   ['بالاتنه ساتن ساده','structured ivory duchess-satin boned bodice, smooth uninterrupted panels, clean and minimalist tailoring'],
-  ['بالاتنه مرواریدی','fitted ivory wedding bodice with dense tiny pearl and crystal hand embroidery, delicate luminous texture']
+  ['بالاتنه مرواریدی','fitted ivory wedding bodice with dense tiny pearl and crystal hand embroidery, delicate luminous texture'],
+  ['بالاتنه پلیسه','structured ivory bridal corset bodice with elegant diagonal fine satin ruching across the torso and a cinched natural waist, no heavy lace']
  ],
  skirt:[
   ['دامن پرنسسی','very full ivory ball-gown skirt with multiple layers of finely gathered tulle from the waist to the floor, no separate embroidery'],
   ['دامن ماهی','fitted ivory mermaid skirt hugging the hips and thighs, flaring dramatically from the knees, smooth satin'],
-  ['دامن آ‌لاین','flowing ivory A-line skirt in matte crepe, softly expanding from natural waist to floor, subtle movement']
+  ['دامن آ‌لاین','flowing ivory A-line skirt in matte crepe, softly expanding from natural waist to floor, subtle movement'],
+  ['دامن طبقه‌ای','tiered ivory bridal skirt with four cascading airy organza and tulle layers from natural waist to floor, each distinct tier finished with a delicate neat edge']
  ],
  sleeves:[
   ['آستین دانتل بلند','two fitted full-length illusion-tulle sleeves with ivory floral lace motifs, reaching the wrists'],
   ['آستین پفی تور','two airy transparent tulle puff sleeves gathered at the upper arms and tapering at the wrists'],
-  ['بدون آستین','sleeveless construction; shoulders and upper arms visible, no sleeve fabric']
+  ['بدون آستین','sleeveless construction; shoulders and upper arms visible, no sleeve fabric'],
+  ['آستین کلوش','long ivory chiffon bell sleeves fitted at the shoulder and elbow and widening smoothly into elegant flowing flared cuffs at the wrists']
  ],
  neckline:[
   ['یقه دلبری','structured sweetheart neckline with a gently curved heart-shaped top edge'],
   ['یقه مربعی','elegant moderately open square neckline with crisp geometrical corners'],
-  ['یقه هفت','refined V-shaped neckline with opaque supportive construction, moderate depth']
+  ['یقه هفت','refined V-shaped neckline with opaque supportive construction, moderate depth'],
+  ['یقه قایقی','wide and shallow ivory bateau neckline sweeping gracefully across both collarbones with a clean horizontal curved edge']
  ]
 };
 export const MIX_KEYS=Object.keys(MIX_COLLECTION);
