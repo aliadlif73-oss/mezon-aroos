@@ -204,6 +204,7 @@ export async function salesApi(req,env){
  if(p==='/api/sales/salons/bot-link'&&post){
   const b=await body(),salon=await ownSalon(db,rep,String(b.slug||''));
   must(salon.approved===1,'فعال‌سازی مزون باید اول توسط ادمین تأیید شود',403);
+  must(!salon.telegram_chat_id&&!salon.bale_chat_id,'ربات این مزون از قبل وصل است؛ تغییر مدیر فقط با ادمین انجام می‌شود',403);
   return J(await newLinkCode(db,salon,env));
  }
  throw new Problem(404,'مسیر پیدا نشد');
