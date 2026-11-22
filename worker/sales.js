@@ -219,7 +219,7 @@ export async function salesApi(req,env){
   ]);
   return J({ok:true,slug,url:links(env,slug),status:'active',credits:initial,bot_link_approved:false});
  }
- const view=p.match(/^\/api\/sales\/salons\/([a-z0-9-]{3,46})$/);
+ const view=p.match(/^\/api\/sales\/salons\/(?!customers$)([a-z0-9-]{3,46})$/);
  if(view&&req.method==='GET'){
   const salon=await ownSalon(db,rep,view[1]);
   const portfolio=await many(db,'SELECT id,title,images,created_at,sizes FROM portfolio WHERE salon_id=? AND published=1 ORDER BY created_at DESC LIMIT 40',salon.id);
