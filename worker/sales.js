@@ -165,13 +165,15 @@ export async function salesApi(req,env){
   must(plan,'پلن در تعرفه فروش وجود ندارد',409);
   const gift=Number(plan.gift);
   must(Number.isSafeInteger(gift)&&gift>=0,'اعتبار هدیه این پلن در ادمین تعرفه‌ها تعیین نشده است',409);
-  const now=Date.now(),subscription={status:'active',plan_id:planId,starts_at:now,expires_at:addPlanMonths(now,months),images_granted:gift,price_paid:plan.price,plan_name:plan.name};
-  const before=Number(salon.credit_limit)||0,newLimit=before+gift;
-  // Store entitlement, credit and an audit ledger in a single D1 transaction.
-  await db.batch([
-   db.prepare('UPDATE salons SET settings=?,credit_limit=? WHERE id=?').bind(JSON.stringify({...settings,subscription}),newLimit,salon.id),
-   db.prepare('INSERT INTO credit_ledger(id,salon_id,amount,method,ref,by_who,limit_after,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(uid(),salon.id,gift,'subscription',planId,'platform-admin',newLimit,now)
+  const now=Date.now(),subscription={id:uid(),status:'active',plan_id:planId,starts_at:now,expires_at:addPlanMonths(now,months),images_granted:gift,price_paid:plan.price,plan_name:plan.name};
+  const before=Number(salon.credit_limit)||0,newLimit=before+gift,nextSettings=JSON.stringify({...settings,subscription});
+  // Compare-and-swap prevents two simultaneous admin requests from granting credit twice.
+  // The audit row is inserted only if this exact subscription version won the update.
+  const tx=await db.batch([
+   db.prepare('UPDATE salons SET settings=?,credit_limit=? WHERE id=? AND settings=?').bind(nextSettings,newLimit,salon.id,salon.settings),
+   db.prepare('INSERT INTO credit_ledger(id,salon_id,amount,method,ref,by_who,limit_after,created_at) SELECT ?,?,?,?,?,?,?,? FROM salons WHERE id=? AND settings=?').bind(uid(),salon.id,gift,'subscription',subscription.id,'platform-admin',newLimit,now,salon.id,nextSettings)
   ]);
+  must(tx[0]?.meta?.changes===1&&tx[1]?.meta?.changes===1,'اشتراک همزمان تغییر کرده است؛ صفحه را تازه کنید و اعتبار را بررسی کنید',409);
   return J({ok:true,slug,subscription,credit_limit:newLimit});
  }
  if(p==='/api/sales/admin/status'&&post){
