@@ -613,6 +613,36 @@ function inquiriesCard(){
  return el('section',{class:'card stack'},[h('h2','درخواست‌های صفحهٔ اصلی'),status,list,more]);
 }
 
+
+function marketersCard(){
+ var root=el('section',{class:'card stack'}),rows=el('div',{class:'stack'}),secret=el('div',{class:'notice',style:'display:none;white-space:pre-wrap;overflow-wrap:anywhere'});
+ var name=field('sales-name','نام بازاریاب'),user=field('sales-user','نام کاربری انگلیسی'),password=field('sales-pass','رمز دلخواه (اختیاری؛ در صورت خالی بودن، رمز امن ساخته می‌شود)','','password');
+ var create=el('button',{class:'btn btn--primary',type:'button',text:'ساخت حساب بازاریاب',onclick:act(function(){
+  return api('/api/sales/admin/create',{name:$('#sales-name').value,username:$('#sales-user').value,password:$('#sales-pass').value}).then(function(d){
+   var v='نام کاربری: '+d.username+'\nرمز یک‌بارنمایش: '+d.password+'\nآدرس ورود: '+location.origin+'/sales';
+   secret.style.display='block';secret.replaceChildren(h('b','مشخصات ورود؛ همین حالا کپی و امن تحویل بده'),el('pre',{style:'white-space:pre-wrap;overflow-wrap:anywhere',text:v}),el('button',{class:'btn btn--soft btn--sm',type:'button',text:'کپی مشخصات',onclick:function(){navigator.clipboard&&navigator.clipboard.writeText(v).then(function(){toast('کپی شد')})}}));
+   $('#sales-name').value='';$('#sales-user').value='';$('#sales-pass').value='';return load();
+  })
+ })});
+ function load(){return api('/api/sales/admin').then(function(d){
+  rows.replaceChildren.apply(rows,(d.users||[]).map(function(u){
+   var on=!!u.active;
+   return el('div',{class:'salon'},[
+    el('div',{class:'grow'},[h('strong',u.name),h('small','نام کاربری: '+u.username+' — '+fa(u.salons)+' مزون')]),
+    badge(on?'فعال':'غیرفعال',on?'ok':'danger'),
+    el('button',{class:'btn btn--ghost btn--sm',type:'button',text:on?'غیرفعال کردن':'فعال کردن',onclick:act(function(){if(!confirm((on?'دسترسی «':'فعال‌سازی «')+u.name+'» تأیید شود؟'))return;return api('/api/sales/admin/status',{id:u.id,active:!on}).then(load)})}),
+    el('button',{class:'btn btn--soft btn--sm',type:'button',text:'رمز جدید',onclick:act(function(){if(!confirm('رمز قبلی '+u.name+' باطل شود؟'))return;return api('/api/sales/admin/reset',{id:u.id}).then(function(r){
+     secret.style.display='block';secret.replaceChildren(h('b','رمز جدید «'+u.name+'»؛ فقط یک بار نمایش داده می‌شود'),el('pre',{style:'white-space:pre-wrap',text:'نام کاربری: '+u.username+'\nرمز: '+r.password}),el('button',{class:'btn btn--soft btn--sm',type:'button',text:'کپی رمز',onclick:function(){navigator.clipboard&&navigator.clipboard.writeText(r.password).then(function(){toast('کپی شد')})}}));return load();
+    })})})
+   ]);
+  }));if(!(d.users||[]).length)rows.append(h('p','هنوز بازاریابی ساخته نشده است.','muted'));
+ })}
+ root.append(h('h2','مدیریت بازاریاب‌ها'),h('p','بازاریاب فقط مزون‌هایی را می‌بیند که خودش ثبت کرده؛ به حساب مالی، اطلاعات سایر مزون‌ها، تنظیمات هوش مصنوعی یا ادمین دسترسی ندارد.','lead'),
+ el('a',{class:'btn btn--ghost',href:'/sales',target:'_blank',rel:'noopener',text:'مشاهده صفحه ورود بازاریاب'}),el('div',{class:'team__add'},[name,user,password]),create,secret,h('h3','کاربران بازاریابی'),rows);
+ load().catch(function(e){rows.append(h('p',e.message,'notice notice--warn'))});
+ return root;
+}
+
 function home(){return api('/api/owner').then(function(d){
  var head=el('div',{class:'page-head'},[el('div',{},[h('h1','داشبورد'),h('p','مشتری‌ها چطور از صفحه‌ها استفاده می‌کنند و مزون‌ها چقدر جواب می‌دهند. با تب‌های زیر بین مزون‌ها، آمار و تنظیمات جابه‌جا شوید.')])]);
  var list=el('div',{class:'salons'});
@@ -624,7 +654,7 @@ function home(){return api('/api/owner').then(function(d){
   var prev=el('span',{class:'hint slug-preview'});si.closest('.field').append(prev);
   function show(){var v=si.value;prev.textContent=v?'صفحهٔ مشتری: '+location.host+'/s/'+v:''}
   si.addEventListener('input',function(){var c=si.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');if(c!==si.value)si.value=c;show()});show()})();
- $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
+ $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard()]]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
 })}
 function smsCard(sms){
  var st=function(ok,on,off){return el('li',{class:ok?'on':'off'},[el('span',{class:'dot',html:ok?IC.check:IC.dash}),h('span',ok?on:off)])};
