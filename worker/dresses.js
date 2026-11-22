@@ -10,7 +10,7 @@ const all=async(db,sql,...a)=>(await db.prepare(sql).bind(...a).all()).results;
 const run=(db,sql,...a)=>db.prepare(sql).bind(...a).run();
 const parse=s=>{try{return JSON.parse(s||'{}')}catch{return {}}};
 
-export const DRESS_KEY=/^(d:\d{1,3}|p:[a-f0-9-]{36})$/;
+export const DRESS_KEY=/^(d:\d{1,3}|p:[a-f0-9-]{36}|m:[0-2]{4})$/;
 export const cleanDressKey=v=>DRESS_KEY.test(String(v||''))?String(v):'';
 export const LEAD_STATUSES=['new','called','booked','cancelled','declined'];
 export const CLOSED=['booked','cancelled','declined'];
@@ -30,12 +30,18 @@ export async function portfolioIndex(db,salonId){
 }
 // The dress a generation (or a lead's chosen result) is about; '' for a customer's own photo.
 export function dressKeyOf(g,index){
+ if(g.transfer==='mix'){
+  const opts=parse(g.opts),parts=opts.mix_parts;
+  if(parts&&['bodice','skirt','sleeves','neckline'].every(k=>Number.isInteger(parts[k])&&parts[k]>=0&&parts[k]<=2))return 'm:'+['bodice','skirt','sleeves','neckline'].map(k=>parts[k]).join('');
+  return '';
+ }
  if(g.reference_id){const pid=index.byMedia.get(g.reference_id);return pid?'p:'+pid:''}
  return Number.isInteger(g.style)&&g.style>=0&&DRESS_STYLES[g.style]?'d:'+g.style:'';
 }
 export function dressName(key,index){
  if(key.startsWith('d:'))return DRESS_STYLES[Number(key.slice(2))]?.[0]||'لباس آماده';
  if(key.startsWith('p:'))return index?.byId.get(key.slice(2))||'لباس حذف‌شدهٔ مزون';
+ if(/^m:[0-2]{4}$/.test(key))return 'طرح ترکیبی: '+key.slice(2).split('').map((n,i)=>['بالاتنه','دامن','آستین','یقه'][i]+' '+(Number(n)+1)).join('، ');
  return 'نامشخص';
 }
 
@@ -48,7 +54,7 @@ export async function dressStats(db,{salonId=null,from,to,limit=12}){
  for(const sid of bySalon){
   const index=await portfolioIndex(db,sid),acc={};
   const add=(key,field,n)=>{if(!key)return;(acc[key]??={tryons:0,saves:0,wants:0})[field]+=Number(n)};
-  for(const r of await all(db,"SELECT reference_id,style,COUNT(*) n FROM generations WHERE salon_id=? AND kind='single' AND state='success' AND line='dress' AND created_at>=? AND created_at<? GROUP BY reference_id,style",sid,from,to))add(dressKeyOf(r,index),'tryons',r.n);
+  for(const r of await all(db,"SELECT reference_id,style,transfer,opts,COUNT(*) n FROM generations WHERE salon_id=? AND kind='single' AND state='success' AND line='dress' AND created_at>=? AND created_at<? GROUP BY reference_id,style,transfer,opts",sid,from,to))add(dressKeyOf(r,index),'tryons',r.n);
   for(const r of await all(db,"SELECT meta,COUNT(*) n FROM events_log WHERE salon_id=? AND kind='save_look' AND created_at>=? AND created_at<? GROUP BY meta",sid,from,to))add(cleanDressKey(r.meta),'saves',r.n);
   for(const r of await all(db,"SELECT dress_key,COUNT(*) n FROM leads WHERE salon_id=? AND intent='want' AND dress_key<>'' AND created_at>=? AND created_at<? GROUP BY dress_key",sid,from,to))add(cleanDressKey(r.dress_key),'wants',r.n);
   for(const [key,v] of Object.entries(acc))rows.push({salon:salonId?undefined:names[sid],key,name:dressName(key,index),...v,conversion:v.tryons?Math.min(1,v.wants/v.tryons):0});
