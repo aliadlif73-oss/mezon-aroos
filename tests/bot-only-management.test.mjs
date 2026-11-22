@@ -148,6 +148,12 @@ test('size buttons apply to the same published dress and respect salon scope',as
   await button(env,515,'sz:'+dress+':40');
   const row=env.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(dress);
   assert.deepEqual(JSON.parse(row.sizes),['38','40']);
+  // Reopening an unfinished size step must show already selected sizes, not an empty keyboard.
+  env.DB.sql.prepare('UPDATE salons SET bot_state=? WHERE id=?').run(JSON.stringify({p:'telegram',chat:'515',ts:Date.now(),dressUpload:{stage:'sizes',id:dress,name:'لباس عروس نمونه',images:[],staffId:null}}),id);
+  bot.calls.length=0;
+  await hook(env,515,'/newdress');
+  const keyboard=bot.calls.filter(x=>x.method==='sendMessage'&&x.body.reply_markup?.inline_keyboard).at(-1)?.body.reply_markup.inline_keyboard.flat().map(x=>x.text)||[];
+  assert(keyboard.filter(x=>x.startsWith('✅ ')).length>=3,'saved 38/40 selections and confirm button are visible');
   await button(env,515,'sz:'+otherDress+':42');
   assert.equal(env.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(otherDress).sizes,'[]');
  }finally{bot.restore()}
