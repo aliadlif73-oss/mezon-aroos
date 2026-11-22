@@ -70,7 +70,7 @@ export async function salesApi(req,env){
  const body=async()=>req.json().catch(()=>({}));
  if(p==='/api/sales/admin'&&req.method==='GET'){
   await owner(req,env);
-  return J({users:await many(db,'SELECT m.id,m.name,m.username,m.active,m.created_at,m.updated_at,COUNT(ms.salon_id) AS salons FROM marketers m LEFT JOIN marketer_salons ms ON ms.marketer_id=m.id GROUP BY m.id ORDER BY m.created_at DESC')});
+  return J({users:await many(db,'SELECT m.id,m.name,m.username,m.active,m.created_at,m.updated_at,COUNT(ms.salon_id) AS salons, SUM(CASE WHEN ms.stage=\'won\' THEN 1 ELSE 0 END) AS won, SUM(CASE WHEN ms.stage=\'demo\' THEN 1 ELSE 0 END) AS demos, SUM(CASE WHEN ms.stage=\'negotiation\' THEN 1 ELSE 0 END) AS negotiating FROM marketers m LEFT JOIN marketer_salons ms ON ms.marketer_id=m.id GROUP BY m.id ORDER BY m.created_at DESC')});
  }
  if(p==='/api/sales/admin/create'&&post){
   await owner(req,env);
@@ -150,7 +150,16 @@ export async function salesApi(req,env){
  if(view&&req.method==='GET'){
   const salon=await ownSalon(db,rep,view[1]);
   const portfolio=await many(db,'SELECT id,title,images,created_at,sizes FROM portfolio WHERE salon_id=? AND published=1 ORDER BY created_at DESC LIMIT 40',salon.id);
-  return J({salon:showSalon(salon),portfolio,url:links(env,salon.slug)});
+  // Operational engagement only: visitor identities and customer phones stay hidden.
+  const since=Date.now()-30*86400000;
+  const [v,g,l]=await Promise.all([
+   first(db,"SELECT COUNT(DISTINCT visitor) AS n FROM events_log WHERE salon_id=? AND kind='view' AND created_at>=? AND visitor<>''",salon.id,since),
+   first(db,"SELECT COUNT(*) AS n FROM generations WHERE salon_id=? AND state='success' AND created_at>=?",salon.id,since),
+   first(db,"SELECT COUNT(*) AS n FROM leads WHERE salon_id=? AND created_at>=?",salon.id,since)
+  ]);
+  const pf=parse(salon.profile),needed=['logo','cover','address','phone','instagram','city'];
+  const metrics={visitors:Number(v?.n||0),tryons:Number(g?.n||0),requests:Number(l?.n||0),dresses:portfolio.length,profile_done:needed.filter(k=>!!pf[k]).length,profile_total:needed.length};
+  return J({salon:showSalon(salon),portfolio,metrics,url:links(env,salon.slug)});
  }
  if(p==='/api/sales/salons/update'&&post){
   const b=await body(),salon=await ownSalon(db,rep,String(b.slug||'')),name=b.name===undefined?salon.name:clean(b.name,100);
