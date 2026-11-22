@@ -354,7 +354,8 @@ async function linkStaff(ctx,t){
 }
 async function staffMessage(ctx,m,textIn){
  const t=ctx.staff;
- if(textIn==='/help'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}\n  if(textIn==='/link'&&!botOnly(ctx.env)){await ctx.say('لینک معرفی اختصاصی خودتان:\n'+refUrl(ctx.origin,ctx.salon,t));return}
+ if(textIn==='/help'){await ctx.say(staffHelp(t,ctx.salon,ctx.origin,inviteReady(ctx.env)),{parse_mode:'HTML'});return}
+  if(textIn==='/link'&&!botOnly(ctx.env)){await ctx.say('لینک معرفی اختصاصی خودتان:\n'+refUrl(ctx.origin,ctx.salon,t));return}
   if(botOnly(ctx.env)&&['/link','/share','/setup'].includes(textIn)){await ctx.say('این قابلیت غیرفعال است؛ تنظیمات فقط از ادمین آینه انجام می‌شوند.');return}
   if(botOnly(ctx.env)&&['/newdress','/cancel','/stop'].includes(textIn)){if(textIn==='/newdress')await beginDress(ctx);else await cancelDress(ctx);return}
   const draft=parse(ctx.salon.bot_state);if(botOnly(ctx.env)&&draft.dressUpload&&draft.chat===ctx.chat&&draft.p===ctx.p){if(!draft.ts||Date.now()-draft.ts>STALE)await expireState(ctx.env,ctx.salon,draft,ctx);else await dressReply(ctx,draft,m,textIn);return}
