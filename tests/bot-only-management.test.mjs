@@ -134,3 +134,21 @@ test('staff member cannot use legacy customer referral link in bot-only mode',as
   assert.doesNotMatch(reply,/\?r=/);
  }finally{bot.restore()}
 });
+
+test('size buttons apply to the same published dress and respect salon scope',async()=>{
+ const env=fixture(),bot=captureBot();
+ try{
+  const id=await make(env,'size-sync'),foreign=await make(env,'size-other');
+  const invite=await req(env,'/api/s/size-sync/owner/telegram-link',{},true);
+  await hook(env,515,'/start '+invite.data.links.telegram.split('start=')[1]);
+  const dress=crypto.randomUUID(),otherDress=crypto.randomUUID(),now=Date.now();
+  const insert=(pid,salon)=>env.DB.sql.prepare("INSERT INTO portfolio(id,salon_id,title,category,description,stylist,images,published,try_on,permission,created_at,line,sizes) VALUES(?,?,?,'','','','[]',1,1,1,?,'dress','[]')").run(pid,salon,'لباس عروس نمونه',now);
+  insert(dress,id);insert(otherDress,foreign);
+  await button(env,515,'sz:'+dress+':38');
+  await button(env,515,'sz:'+dress+':40');
+  const row=env.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(dress);
+  assert.deepEqual(JSON.parse(row.sizes),['38','40']);
+  await button(env,515,'sz:'+otherDress+':42');
+  assert.equal(env.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(otherDress).sizes,'[]');
+ }finally{bot.restore()}
+});
