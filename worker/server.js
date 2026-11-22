@@ -3,7 +3,7 @@ import {processDue,onbCleanup} from './onboarding.js';
 import {identity,issueCookie,clearCookie,same,passwordLoginEnabled} from './auth.js';
 import {bucketFor,putImage,putVideo,maxUpload} from './storage.js';
 import {precheck,PHOTO_RULES} from './precheck.js';
-import {mobilesIn,customerLinks,applyLeadStatus,botReady,deliverLead,deliverPending,newLinkCode,setWebhook,inboxes,followLinks,PLATFORMS,platformReady,baleSecret,staffInvite,notifyConflict,expireStates},call as botApiCall} from './telegram.js';
+import {mobilesIn,customerLinks,applyLeadStatus,botReady,deliverLead,deliverPending,newLinkCode,setWebhook,inboxes,followLinks,PLATFORMS,platformReady,baleSecret,staffInvite,notifyConflict,expireStates,call as botApiCall} from './telegram.js';
 import {createPairing,pairStatus} from './pairing.js';
 import {normalizeDressSizes,DRESS_SIZES} from './dress-sizes.js';
 import {BACKGROUNDS,bgOf} from './backgrounds.js';
