@@ -5,6 +5,7 @@ import {owner} from './server.js';
 import {putImage,maxUpload} from './storage.js';
 import {newLinkCode} from './telegram.js';
 import {normalizeDressSizes} from './dress-sizes.js';
+import {normalizeDressPhoto} from './dress-background.js';
 import {PLAN_MONTHS,addPlanMonths,subscriptionState} from './subscriptions.js';
 
 const enc=new TextEncoder();
@@ -291,7 +292,7 @@ export async function salesApi(req,env){
   must(['logo','cover','portrait','portfolio'].includes(kind),'نوع تصویر نامعتبر است');
   const ab=await req.arrayBuffer(),bytes=new Uint8Array(ab);
   must(bytes.length<=maxUpload(env),'حجم عکس زیاد است',413);
-  const id=await putImage(env,salon,null,bytes,kind==='portfolio'?'portfolio':'brand');
+  const id=await putImage(env,salon,null,kind==='portfolio'?await normalizeDressPhoto(env,bytes):bytes,kind==='portfolio'?'portfolio':'brand');
   if(kind!=='portfolio'){
    const profile={...parse(salon.profile),[kind]:id};
    await exec(db,'UPDATE salons SET profile=? WHERE id=?',JSON.stringify(profile),salon.id);
