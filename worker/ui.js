@@ -628,7 +628,7 @@ function marketersCard(){
   rows.replaceChildren.apply(rows,(d.users||[]).map(function(u){
    var on=!!u.active;
    return el('div',{class:'salon'},[
-    el('div',{class:'grow'},[h('strong',u.name),h('small','نام کاربری: '+u.username+' — '+fa(u.salons)+' مزون')]),
+    el('div',{class:'grow'},[h('strong',u.name),h('small','نام کاربری: '+u.username+' — '+fa(u.salons)+' مزون · '+fa(u.demos)+' دمو · '+fa(u.negotiating)+' مذاکره · '+fa(u.won)+' فروش ثبت‌شده')]),
     badge(on?'فعال':'غیرفعال',on?'ok':'danger'),
     el('button',{class:'btn btn--ghost btn--sm',type:'button',text:on?'غیرفعال کردن':'فعال کردن',onclick:act(function(){if(!confirm((on?'دسترسی «':'فعال‌سازی «')+u.name+'» تأیید شود؟'))return;return api('/api/sales/admin/status',{id:u.id,active:!on}).then(load)})}),
     el('button',{class:'btn btn--soft btn--sm',type:'button',text:'رمز جدید',onclick:act(function(){if(!confirm('رمز قبلی '+u.name+' باطل شود؟'))return;return api('/api/sales/admin/reset',{id:u.id}).then(function(r){
