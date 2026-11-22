@@ -696,7 +696,7 @@ async function beginDress(ctx){
  if(state.team||Number.isInteger(state.step)){await ctx.say('ابتدا فرآیند قبلی را پایان دهید.');return}
  const draft={p:ctx.p,chat:ctx.chat,ts:Date.now(),dressUpload:{stage:'photos',images:[],staffId:ctx.role==='staff'?ctx.staff.id:null}};
  await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify(draft),ctx.salon.id);
- await ctx.say('📸 مرحله ۱/۴: عکس «جلو» را جداگانه بفرستید. بک شلوغ مزون خودکار حذف می‌شود و عکس روی بک ثابت خاکستری گرم آینه قرار می‌گیرد. بعد بغل راست، بغل چپ و پشت را بفرستید؛ سپس نام مدل و سایزها. /cancel انصراف');
+ await ctx.say('📸 مرحله ۱/۴: عکس «جلو» را جداگانه بفرستید. در صورت فعال بودن پردازش تصویر، پس‌زمینه روی بک ثابت آینه قرار می‌گیرد؛ اگر این سرویس در دسترس نباشد، عکس اصلی بدون حذف شدن ثبت می‌شود. بعد بغل راست، بغل چپ و پشت را بفرستید؛ سپس نام مدل و سایزها. /cancel انصراف');
 }
 async function cancelDress(ctx){
  const s=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
@@ -716,6 +716,8 @@ async function dressReply(ctx,state,m,msg){
   const raw=await fileBytes(ctx.env,ctx.p,ph.file_id);
   const normalized=await normalizeDressPhoto(ctx.env,raw);
   const media=await putImage(ctx.env,ctx.salon,null,normalized,'portfolio');
+  const backgroundReady=normalized!==raw;
+  if(!backgroundReady)console.warn('dress saved without background removal',ctx.salon.id,x.images.length);
   const images=[...x.images,media],stage=images.length===4?'name':'photos';
   await run(ctx.db,'UPDATE salons SET bot_state=? WHERE id=?',JSON.stringify({...state,ts:Date.now(),dressUpload:{...x,images,stage}}),ctx.salon.id);
   // Show the real standardized image in Telegram so the boutique can check
@@ -723,11 +725,13 @@ async function dressReply(ctx,state,m,msg){
   try{
    const form=new FormData();
    form.append('chat_id',ctx.chat);
-   form.append('photo',new Blob([normalized],{type:'image/jpeg'}),'ayeneh-studio.jpg');
-   form.append('caption','✅ پیش‌نمایش بک ثابت آینه — زاویه «'+DRESS_ANGLES[images.length-1]+'»');
+   const previewMime=normalized[0]===0xff?'image/jpeg':normalized[0]===0x89?'image/png':'image/webp';
+   form.append('photo',new Blob([normalized],{type:previewMime}),'ayeneh-dress.'+(previewMime==='image/png'?'png':previewMime==='image/webp'?'webp':'jpg'));
+   form.append('caption',backgroundReady?'✅ پیش‌نمایش بک ثابت آینه — زاویه «'+DRESS_ANGLES[images.length-1]+'»':'✅ عکس اصلی ثبت شد (حذف پس‌زمینه در دسترس نبود) — زاویه «'+DRESS_ANGLES[images.length-1]+'»');
    await call(ctx.env,ctx.p,'sendPhoto',form);
   }catch(err){console.error('dress preview send failed',err?.message)}
-  await ctx.say(stage==='name'?'✅ هر چهار عکس با بک ثابت ثبت شد. حالا نام مدل را بنویسید.':'✅ عکس «'+DRESS_ANGLES[images.length-1]+'» با بک ثابت ثبت شد. حالا «'+DRESS_ANGLES[images.length]+'» را بفرستید.');
+  const saved=backgroundReady?'با بک ثابت':'با تصویر اصلی (بدون حذف پس‌زمینه)';
+  await ctx.say(stage==='name'?'✅ هر چهار عکس ثبت شد. حالا نام مدل را بنویسید.':'✅ عکس «'+DRESS_ANGLES[images.length-1]+'» '+saved+' ثبت شد. حالا «'+DRESS_ANGLES[images.length]+'» را بفرستید.');
   return;
  }
  if(x.stage==='name'){
