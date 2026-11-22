@@ -22,7 +22,8 @@ test('the existing photo and regular salon/catalog tabs remain alongside the new
  assert.match(customerHTML,/if\(state.step===1\)root.append\(stepPhoto\(\)\)/);
  assert.match(customerHTML,/if\(state.pub.catalog\)tabs.push\(\['catalog',1\]\)/);
  assert.match(customerHTML,/if\(state.pub.own_dress\)tabs.push\(\['upload',2\]\)/);
- assert.match(customerHTML,/tabs.push\(\['mix',3\]\)/);\n assert.match(customerHTML,/state.tab==='mix'\?!!state.pub.mix_enabled/);
+ assert.match(customerHTML,/tabs.push\(\['mix',3\]\)/);
+ assert.match(customerHTML,/state.tab==='mix'\?!!state.pub.mix_enabled/);
  assert.match(customerHTML,/لباس انتخابی من/);
  assert.match(customerHTML,/mix_parts:state.mix/);
  assert.match(customerHTML,/state.tab==='mix'/);
