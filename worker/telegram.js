@@ -716,14 +716,16 @@ function sizeKeyboard(id,selected){
  return {inline_keyboard:rows};
 }
 async function askDressSizes(ctx,id,title){
- await ctx.say('📏 سایزهای موجود برای «'+title+'» را انتخاب کنید. می‌توانید چند گزینه را فعال کنید؛ هر انتخاب همان لحظه ذخیره می‌شود. در پایان «ثبت سایزها» را بزنید.',{reply_markup:sizeKeyboard(id,[])});
+ const current=await one(ctx.db,'SELECT sizes FROM portfolio WHERE id=? AND salon_id=?',id,ctx.salon.id);
+ const selected=parseDressSizes(current?.sizes);
+ await ctx.say('📏 سایزهای موجود برای «'+title+'» را انتخاب کنید. می‌توانید چند گزینه را فعال کنید؛ هر انتخاب همان لحظه ذخیره می‌شود. در پایان «ثبت سایزها» را بزنید.',{reply_markup:sizeKeyboard(id,selected)});
 }
 
 
 const DRESS_ANGLES=['جلو','بغل راست','بغل چپ','پشت'];
 async function beginDress(ctx){
  const state=parse((await one(ctx.db,'SELECT bot_state FROM salons WHERE id=?',ctx.salon.id))?.bot_state);
- if(state.dressUpload&&state.chat!==ctx.chat){await ctx.say('ثبت دیگری در مزون در جریان است.');return}
+ if(state.dressUpload&&(state.chat!==ctx.chat||state.p!==ctx.p)){await ctx.say('ثبت دیگری در مزون در جریان است.');return}
  if(state.dressUpload){if(!state.ts||Date.now()-state.ts>STALE){await expireState(ctx.env,ctx.salon,state,ctx);return beginDress(ctx)}let x=state.dressUpload;await ctx.say(x.stage==='name'?'نام مدل را بفرستید.':x.stage==='sizes'?'سایزها را انتخاب کنید.':'عکس '+DRESS_ANGLES[x.images.length]+' را ارسال کنید.');if(x.stage==='sizes')await askDressSizes(ctx,x.id,x.name);return}
  if(state.team||Number.isInteger(state.step)){await ctx.say('ابتدا فرآیند قبلی را پایان دهید.');return}
  const draft={p:ctx.p,chat:ctx.chat,ts:Date.now(),dressUpload:{stage:'photos',images:[],staffId:ctx.role==='staff'?ctx.staff.id:null}};
