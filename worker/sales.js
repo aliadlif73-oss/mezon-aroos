@@ -103,8 +103,11 @@ export async function salesApi(req,env){
   return J({ok:true,password}); // One-time display only.
  }
  if(p==='/api/sales/login'&&post){
-  await limited(db,'sales:login:'+ip(req),30,'تلاش ورود بیش از حد مجاز است',429);
   const b=await body(),username=String(b.username||'').toLowerCase().trim(),password=String(b.password||'');
+  must(username.length<=40&&password.length<=128,'ورودی ورود معتبر نیست',400);
+  // Shared office/cellular IPs should not lock everyone out after a few mistakes.
+  await limited(db,'sales:login:ip:'+ip(req),100,'تلاش ورود بیش از حد مجاز است');
+  await limited(db,'sales:login:user:'+ip(req)+':'+username,15,'برای این حساب تلاش‌های ناموفق زیادی ثبت شده است');
   const user=await first(db,'SELECT * FROM marketers WHERE username=? AND active=1',username);
   // Uniform-looking error for inactive, unknown and incorrect passwords.
   const dummy='0'.repeat(32),candidate=await passHash(password,(user?.password_salt)||dummy);
