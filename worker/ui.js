@@ -691,7 +691,22 @@ function marketerPricingCard(){
   })});
   form.replaceChildren(campaign,end,...rows,save);
  })}
- root.append(h('h2','تعرفه و امکانات قابل نمایش به بازاریاب'),h('p','قیمت‌ها و هدایا فقط توسط ادمین تغییر می‌کنند. پایان کمپین که برسد، قیمت پایه خودکار نمایش داده می‌شود. مبلغ‌ها تومان هستند.','lead'),form);
+ var activate=el('section',{class:'card stack'},[
+  h('h3','فعال‌سازی اشتراک پرداخت‌شده مزون'),
+  h('p','فقط پس از تأیید پرداخت توسط ادمین، پلن و عکس‌های هدیه به‌صورت یکجا در حساب مزون اعمال می‌شود. وضعیت «فروش موفق» در بازاریاب به‌تنهایی اشتراک را فعال نمی‌کند.','hint'),
+  field('sub-salon','شناسه مزون (slug)'),
+  el('label',{class:'field'},[el('span',{text:'پلن خریداری‌شده'}),el('select',{id:'sub-plan'},[
+   el('option',{value:'one',text:'۱ ماهه (بدون طراحی ترکیبی)'}),
+   el('option',{value:'three',text:'۳ ماهه (با طراحی ترکیبی)'}),
+   el('option',{value:'six',text:'۶ ماهه (با طراحی ترکیبی)'})
+  ])]),
+  el('button',{class:'btn btn--primary',type:'button',text:'تأیید پرداخت و فعال‌سازی اشتراک',onclick:act(function(){
+   var slug=$('#sub-salon').value.trim().toLowerCase(),plan=$('#sub-plan').value;
+   if(!slug||!confirm('پرداخت اشتراک '+plan+' برای '+slug+' تأیید شده و اعتبار عکس هدیه اضافه شود؟'))return;
+   return api('/api/sales/admin/subscription',{slug:slug,plan_id:plan}).then(function(d){toast('اشتراک فعال شد؛ اعتبار فعلی: '+fa(d.credit_limit));$('#sub-salon').value=''});
+  })})
+ ]);
+ root.append(h('h2','تعرفه و امکانات قابل نمایش به بازاریاب'),h('p','قیمت‌ها و هدایا فقط توسط ادمین تغییر می‌کنند. پایان کمپین که برسد، قیمت پایه خودکار نمایش داده می‌شود. مبلغ‌ها تومان هستند.','lead'),form,activate);
  load().catch(function(e){form.append(h('p',e.message,'notice notice--warn'))});
  return root;
 }
