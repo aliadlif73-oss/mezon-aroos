@@ -1007,7 +1007,7 @@ function stepModel(){
  box.append(sizesRow());
  if(quotaLeft()===0&&!state.tourDemo)box.append(notice('warn',quotaOut()));
  var seg=el('div',{class:'seg',role:'tablist'});
- var tabs=[['salon',0]];if(state.pub.catalog)tabs.push(['catalog',1]);if(state.pub.own_dress)tabs.push(['upload',2]);if(state.pub.mix_enabled)tabs.push(['mix',3]);
+ var tabs=[['salon',0]];if(state.pub.catalog)tabs.push(['catalog',1]);if(state.pub.own_dress)tabs.push(['upload',2]);tabs.push(['mix',3]); // Visible for all; the API still restricts production to eligible plans.
  if(tabs.length>=4)seg.classList.add('seg--four');
  if(!tabs.some(function(x){return x[0]===state.tab}))state.tab='salon';
  tabs.forEach(function(x){
@@ -1067,6 +1067,7 @@ function stepModel(){
   box.append(grid);
   if(state.style!==null&&!state.reference)box.append(pickedBar('لباس انتخابی: '+LIST[state.style][0],function(){pickLook(function(){state.style=null})}));
  }else if(state.tab==='mix'){
+  if(!state.pub.mix_enabled)box.append(notice('warn','«لباس انتخابی من» فقط برای مزون‌های دارای اشتراک فعال ۳ یا ۶ ماهه قابل استفاده است. مدیر آینه می‌تواند آن را در تنظیمات مزون فعال کند. نمونه‌ها قابل مشاهده‌اند اما تولید تصویر غیرفعال است.'));
   box.append(h('p','از تصاویر نمونه الهام بگیر و مدل دلخواهت را انتخاب کن. نتیجه براساس نام و ویژگی‌های انتخاب‌شده روی عکس تو ساخته می‌شود؛ این طرح پیشنهادی است، نه تضمین دوخت یا سایز واقعی.','hint'));
   ['bodice','skirt','sleeves','neckline'].forEach(function(kind){
    var wrap=el('section',{class:'mix-section'},[h('h3',MIX_LABELS[kind],'mix-section__title')]);
@@ -1122,10 +1123,11 @@ function build(){
  go(3);generate();
 }
 function renderDockSoon(){clearTimeout(renderDockSoon.t);renderDockSoon.t=setTimeout(function(){renderDock();var b=$('#flow .btn--build');if(b){var c=canGenerate(),r=hasChoice();b.innerHTML=buildLabel(c);b.disabled=!r;var hn=$('#flow .build-hint');if(hn)hn.textContent=buildHint(r,c,quotaLeft())}},60)}
-function hasChoice(){return !!state.original&&(state.tab==='mix'&&!!state.pub.mix_enabled||state.style!==null||!!state.reference)}
-function canGenerate(){return hasChoice()&&!!state.pub.generation&&(state.tab==='mix'||!state.reference||!!state.pub.reference)&&quotaLeft()!==0}
+function hasChoice(){return !!state.original&&(state.tab==='mix'?!!state.pub.mix_enabled:(state.style!==null||!!state.reference))}
+function canGenerate(){return hasChoice()&&!!state.pub.generation&&(state.tab!=='mix'||!!state.pub.mix_enabled)&&(!state.reference||state.tab==='mix'||!!state.pub.reference)&&quotaLeft()!==0}
 function missingReason(){
  if(!state.original)return 'اول عکس خودت را اضافه کن';
+ if(state.tab==='mix'&&!state.pub.mix_enabled)return 'طراحی ترکیبی برای این مزون فعال نشده؛ فقط پلن ۳ یا ۶ ماهه مجاز است';
  if(quotaLeft()===0)return quotaOut();
  if(!state.pub.generation)return 'تولید شبیه‌سازی برای این مزون فعال نیست؛ می‌توانی درخواست بررسی بفرستی';
  if(state.reference&&!state.pub.reference)return 'انتقال عکس مرجع هنوز فعال نشده است';
