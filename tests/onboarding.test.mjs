@@ -573,3 +573,24 @@ test('/api/internal/ai-check: JOB_TOKEN only; reports model, status, latency and
  g.set(()=>new Response('{"error":{"message":"model not found"}}',{status:404}));
  const bad=await (await call({Authorization:'Bearer job-test'})).json();assert.equal(bad.ok,false);assert.equal(bad.status,404);assert(bad.error_snippet.includes('model not found'));
 }));
+
+
+test('bot-only linked salon /start restarts dress registration and never queues promo',async()=>{
+ const env=fixture({SALON_MANAGEMENT_MODE:'bot'}),bots=mockBots();
+ try{
+  const id=await makeSalon(env,{slug:'start-regression'});
+  env.DB.sql.prepare('UPDATE salons SET telegram_chat_id=? WHERE id=?').run('4801',id);
+  await say(tgHook,env,4801,'/start');
+  let state=JSON.parse(env.DB.sql.prepare('SELECT bot_state FROM salons WHERE id=?').get(id).bot_state);
+  assert.equal(state.dressUpload.stage,'photos');
+  assert.deepEqual(state.dressUpload.images,[]);
+  assert(/عکس «جلو»/.test(bots.last('sendMessage').text));
+  assert.equal(queue(env).filter(r=>r.chat_id==='4801').length,0);
+  env.DB.sql.prepare('UPDATE salons SET bot_state=? WHERE id=?').run(JSON.stringify({...state,dressUpload:{...state.dressUpload,images:['old-photo']}}),id);
+  await say(tgHook,env,4801,'/start');
+  state=JSON.parse(env.DB.sql.prepare('SELECT bot_state FROM salons WHERE id=?').get(id).bot_state);
+  assert.deepEqual(state.dressUpload.images,[],'fresh start discards unfinished draft photos');
+  assert(/عکس «جلو»/.test(bots.last('sendMessage').text));
+  assert.equal(bots.of('sendVideo').length,0);
+ }finally{bots.restore()}
+});
