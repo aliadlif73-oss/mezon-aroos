@@ -111,7 +111,7 @@ export async function sendWelcome(ctx,{panel=false,force=false}={}){
  if(panel){
   await run(ctx.db,"UPDATE promo_queue SET status='skipped',error='linked salon chat',updated_at=? WHERE platform=? AND chat_id=? AND status='pending'",Date.now(),ctx.p,String(ctx.chat)).catch(()=>{});
  }else{
-  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:force?'introf':'intro',force})}catch(e){console.error('schedule intro',e?.message)}
+  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:'intro',force})}catch(e){console.error('schedule intro',e?.message)}
  }
  // Primary path: keep this request's isolate alive and send when due. The queue row is the fallback; processDue claims rows atomically, so the video can never go twice.
  if(queued&&ctx.wait)ctx.wait(timing.sleep(VIDEO_DELAY+500).then(()=>processDue(ctx.env,{origin:ctx.origin,limit:5})).catch(()=>{}));
@@ -234,6 +234,8 @@ async function checkPassword(ctx,m,st){
 // One row per (platform, chat) per 24 hours; the insert is a single atomic statement, so two welcomes can not queue two videos.
 export async function scheduleIntro(db,p,chat,now=Date.now(),{kind='intro',force=false}={}){
  if(force){ // replace whatever is still waiting for this chat, then queue a fresh one
+  const pending=await one(db,"SELECT id FROM promo_queue WHERE platform=? AND chat_id=? AND status='pending' LIMIT 1",p,String(chat));
+  kind=pending?'intro':'introf';
   await run(db,"DELETE FROM promo_queue WHERE platform=? AND chat_id=? AND status='pending'",p,String(chat));
   const r=await run(db,"INSERT INTO promo_queue(id,platform,chat_id,kind,due_at,status,attempts,created_at,updated_at) VALUES(?,?,?,?,?,'pending',0,?,?)",crypto.randomUUID(),p,String(chat),kind,now+VIDEO_DELAY,now,now);
   return r.meta.changes>0;
