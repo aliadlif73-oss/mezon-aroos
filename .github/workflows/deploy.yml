@@ -98,9 +98,14 @@ jobs:
           ORIGIN: https://ayneh-mezon.site
         run: |
           if [ -z "$TOKEN" ] || [ -z "$SECRET" ] || [ -z "$ORIGIN" ]; then echo "Telegram or APP_ORIGIN not configured; skipping webhook."; exit 0; fi
-          curl -sS -o /dev/null -w "setWebhook HTTP %{http_code}\n" "https://api.telegram.org/bot$TOKEN/setWebhook" \
+          set -euo pipefail
+          response=$(curl --fail-with-body -sS --retry 2 "https://api.telegram.org/bot$TOKEN/setWebhook" \
             --data-urlencode "url=$ORIGIN/api/telegram/webhook" --data-urlencode "secret_token=$SECRET" \
-            --data-urlencode 'allowed_updates=["message","callback_query"]'
+            --data-urlencode 'allowed_updates=["message","callback_query"]')
+          printf '%s' "$response" | python3 -c "import json,sys; data=json.load(sys.stdin); assert data.get('ok') is True, 'Telegram rejected setWebhook'"
+          info=$(curl --fail-with-body -sS --retry 2 "https://api.telegram.org/bot$TOKEN/getWebhookInfo")
+          printf '%s' "$info" | EXPECTED_URL="$ORIGIN/api/telegram/webhook" python3 -c "import json,os,sys; data=json.load(sys.stdin); assert data.get('ok') is True and data.get('result',{}).get('url')==os.environ['EXPECTED_URL'], 'Telegram webhook URL mismatch'"
+          echo 'Telegram webhook verified against the deployed URL.'
       - name: Point the Bale bot at this deployment
         if: steps.config.outputs.ready == 'true'
         env:
