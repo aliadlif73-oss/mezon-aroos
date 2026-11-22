@@ -502,11 +502,12 @@ async function customerStart(ctx,slug){
 }
 async function customerMessage(ctx,bc,m){
  const {env,db,p}=ctx,photo=photoOf(m);
- if(m.contact?.phone_number&&(!m.contact.user_id||String(m.contact.user_id)===String(m.from?.id))){
+ if(m.contact?.phone_number&&m.contact.user_id&&String(m.contact.user_id)===String(m.from?.id)){
   const d=String(m.contact.phone_number).replace(/\D/g,'').slice(-10);
   if(/^9\d{9}$/.test(d)){await run(db,'UPDATE bot_customers SET phone=? WHERE platform=? AND chat_id=?','0'+d,p,ctx.chat);await ctx.say('ممنون ✅ شمارهٔ '+'0'+d+' ثبت شد.\nحالا روی سایت مزون «ارسال برای خودم» را بزن تا تصویرت همین‌جا برسد.',{reply_markup:{remove_keyboard:true}});return}
  }
- if(!photo){await ctx.say('عکس تمام‌قد خودت را بفرست (📎 ← عکس) تا لباس عروس را روی خودت ببینی. 🌸');return}
+ if(m.contact?.phone_number){await ctx.say('برای حفاظت از تصاویر شما، فقط شماره‌ای که خود تلگرام تأیید می‌کند پذیرفته می‌شود؛ لطفاً با دکمه «اشتراک شمارهٔ من» دوباره ارسال کنید.');return}
+  if(!photo){await ctx.say('عکس تمام‌قد خودت را بفرست (📎 ← عکس) تا لباس عروس را روی خودت ببینی. 🌸');return}
  await limited(db,'botphoto:'+p+':'+ctx.chat,12,'امروز چند عکس فرستاده‌ای؛ فردا دوباره امتحان کن');
  must((photo.file_size||0)<=5*1024*1024,'عکس بزرگ‌تر از ۵ مگابایت است؛ آن را به‌صورت «عکس» بفرست نه «فایل»');
  const salon=await one(db,'SELECT * FROM salons WHERE id=?',bc.salon_id);
