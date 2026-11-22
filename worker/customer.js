@@ -1,6 +1,7 @@
 import {DRESS_STYLES,LINE_FILTERS,LINE_PHOTO,LINE_LABEL} from './lines.js';
 import {SIZE_OPTIONS} from './dress-sizes.js';
 import {MIX_COLLECTION} from './bridal-mix.js';
+import {MIX_SPRITE} from './bridal-mix-sprite.js';
 import {QR_JS} from './qr.js';
 import {PHOTO_CHECK_JS} from './pairing.js';
 import {SCENE_JS} from './scene.js';
@@ -693,6 +694,7 @@ var ICO={
  orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3.5c2 1.6 3.2 4.7 3.2 8.5s-1.2 6.9-3.2 8.5"/><path d="m18.6 13.8 2 1.6-2.3 1"/></svg>',
  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>',};
 var MIX_PARTS=__MIX_PARTS__;
+var MIX_SPRITE=__MIX_SPRITE__;
 var MIX_LABELS={bodice:'بالاتنه',skirt:'دامن',sleeves:'آستین',neckline:'یقه'};
 var state={mix:{bodice:0,skirt:0,sleeves:0,neckline:0},sz:{arm:'',bust:'',belly:''},dressSize:'',ratio:'',pub:null,step:1,original:null,reference:null,refTitle:'',style:null,tab:'salon',result:null,gen:null,genState:null,busy:false,error:'',session:false,verified:false,idem:null,rating:0,me:null};
 try{state.me=JSON.parse(localStorage.getItem('ayneh-me')||'null')}catch(e){}
@@ -1064,14 +1066,14 @@ function stepModel(){
   box.append(grid);
   if(state.style!==null&&!state.reference)box.append(pickedBar('لباس انتخابی: '+LIST[state.style][0],function(){pickLook(function(){state.style=null})}));
  }else if(state.tab==='mix'){
-  box.append(h('p','طرح دلخواهت را از هر قسمت انتخاب کن؛ طرح ترکیبی روی تصویر خودت ساخته می‌شود. این یک پیش‌نمایش طراحی است، نه تضمین امکان دوخت یا سایز واقعی.','hint'));
+  box.append(h('p','از تصاویر نمونه الهام بگیر و مدل دلخواهت را انتخاب کن. نتیجه براساس نام و ویژگی‌های انتخاب‌شده روی عکس تو ساخته می‌شود؛ این طرح پیشنهادی است، نه تضمین دوخت یا سایز واقعی.','hint'));
   ['bodice','skirt','sleeves','neckline'].forEach(function(kind){
    var wrap=el('section',{class:'mix-section'},[h('h3',MIX_LABELS[kind],'mix-section__title')]);
    var grid=el('div',{class:'mix-options'});
    (MIX_PARTS[kind]||[]).forEach(function(item,index){
     var selected=state.mix[kind]===index;
     var card=el('button',{type:'button',class:'mix-choice'+(selected?' is-on':''),'aria-pressed':selected?'true':'false'},[
-     el('span',{class:'mix-choice__preview',html:mixArt(kind,index)}),
+     el('span',{class:'mix-choice__preview',style:'background-image:url("'+MIX_SPRITE+'");background-size:400% 300%;background-position:'+({bodice:0,skirt:1,sleeves:2,neckline:3}[kind]*100/3)+'% '+(index*50)+'%;'}),
      el('span',{class:'mix-choice__name',text:item[0]}),
      selected?el('span',{class:'mix-choice__check',html:ICO.check}):null
     ]);
@@ -2992,4 +2994,4 @@ export const customerHTML=String.raw`<!doctype html><html lang="fa" dir="rtl"><h
 <script>__JS__</script>
 </body></html>`
  .replace('__CSS__',()=>baseCSS+customerCSS+freshDemoCSS+"\n.mix-section{margin:18px 0}.mix-section__title{font-size:17px;margin:0 0 10px;color:var(--ink)}.mix-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mix-choice{position:relative;display:grid;gap:6px;text-align:center;border:1.5px solid #ded8d2;border-radius:15px;padding:7px;background:#fff;color:var(--ink);font:inherit;cursor:pointer}.mix-choice.is-on{border:2px solid #927656;box-shadow:0 0 0 2px #92765622}.mix-choice__preview{display:block;width:100%;aspect-ratio:5/6}.mix-choice__preview svg{width:100%;height:100%;display:block;border-radius:10px}.mix-choice__name{font-size:12px;font-weight:700;line-height:1.8}.mix-choice__check{position:absolute;left:8px;top:8px;color:#fff;background:#886944;border-radius:50%;width:25px;height:25px;display:grid;place-items:center}.mix-choice__check svg{width:15px;height:15px}.mix-footnote{background:#f7f4ef;padding:14px;border-radius:15px;margin:20px 0}.mix-footnote b{font-size:14px}.mix-footnote p{font-size:12px;margin:5px 0}\n")
- .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__MIX_PARTS__',()=>JSON.stringify(MIX_COLLECTION)).replace('__DRESS_SIZES__',()=>JSON.stringify(SIZE_OPTIONS)).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
+ .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__MIX_PARTS__',()=>JSON.stringify(MIX_COLLECTION)).replace('__MIX_SPRITE__',()=>JSON.stringify(MIX_SPRITE)).replace('__DRESS_SIZES__',()=>JSON.stringify(SIZE_OPTIONS)).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
