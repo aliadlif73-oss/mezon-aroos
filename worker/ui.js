@@ -691,6 +691,25 @@ function marketerPricingCard(){
  return root;
 }
 
+function botHealthCard(){
+ var box=el('section',{class:'card stack'},[h('h2','عیب‌یابی اتصال ربات'),h('p','بررسی مستقیم از Cloudflare و API تلگرام؛ صرفاً وجود توکن کافی نیست.','lead')]);
+ var status=h('p','در حال بررسی اتصال…','hint');box.append(status);
+ function refresh(){
+  return api('/api/owner/bot-health').then(function(d){
+   var t=d.telegram||{},b=d.bale||{};
+   status.replaceChildren(
+    h('b',t.connected?'✅ وبهوک تلگرام روی دامنه آینه ثبت شده':'⚠️ اتصال تلگرام تأیید نشده'),
+    h('p',t.token_configured?'توکن تلگرام در سرور وجود دارد.':'توکن تلگرام در سرور تنظیم نشده است.','hint'),
+    h('p','پیام‌های منتظر: '+fa(t.pending_updates||0),'hint'),
+    t.last_error?h('p','آخرین خطای ثبت‌شده تلگرام: '+t.last_error,'notice notice--warn'):null,
+    t.error?h('p',t.error,'notice notice--warn'):null,
+    h('p','بله: '+(b.token_configured?'توکن در سرور موجود است؛ وبهوک هنوز از این بخش تأیید نشده.':'توکن تنظیم نشده است.'),'hint')
+   );
+  }).catch(function(e){status.textContent='دریافت وضعیت اتصال ممکن نشد: '+e.message});
+ }
+ box.append(el('button',{class:'btn btn--soft',type:'button',text:'بررسی مجدد اتصال',onclick:act(refresh)}));
+ refresh();return box;
+}
 function home(){return api('/api/owner').then(function(d){
  var head=el('div',{class:'page-head'},[el('div',{},[h('h1','داشبورد'),h('p','مشتری‌ها چطور از صفحه‌ها استفاده می‌کنند و مزون‌ها چقدر جواب می‌دهند. با تب‌های زیر بین مزون‌ها، آمار و تنظیمات جابه‌جا شوید.')])]);
  var list=el('div',{class:'salons'});
@@ -702,7 +721,7 @@ function home(){return api('/api/owner').then(function(d){
   var prev=el('span',{class:'hint slug-preview'});si.closest('.field').append(prev);
   function show(){var v=si.value;prev.textContent=v?'صفحهٔ مشتری: '+location.host+'/s/'+v:''}
   si.addEventListener('input',function(){var c=si.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');if(c!==si.value)si.value=c;show()});show()})();
- $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard(),marketerBotApprovalsCard(),marketerPricingCard()]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot)]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
+ $('#app').replaceChildren(head,pendingCard(),tabsView([['مزون‌ها',[el('div',{class:'grid grid--2'},[el('div',{class:'stack'},[list,create]),el('div',{class:'stack'},[accountsCard()])])]],['بازاریاب‌ها',[marketersCard(),marketerBotApprovalsCard(),marketerPricingCard()]],['آمار',[dashboard(d.salons)]],['اعتبار',[weightsCard(),ledgerCard(d.salons)]],['هشدار و ربات',[alertsCard(d),botCard(d.bot),botHealthCard()]],['سرویس‌ها',[smsCard(d.sms||{}),imageCard(d.image)]],['درخواست‌های صفحهٔ اصلی',[inquiriesCard()]]],'admin')) ;
 })}
 function smsCard(sms){
  var st=function(ok,on,off){return el('li',{class:ok?'on':'off'},[el('span',{class:'dot',html:ok?IC.check:IC.dash}),h('span',ok?on:off)])};
