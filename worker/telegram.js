@@ -590,7 +590,18 @@ async function onCallback(ctx,q){
    else{
     const chosen=parseDressSizes(dress.sizes);
     if(done&&botOnly(env)&&!chosen.length){note='حداقل یک سایز انتخاب کنید';await ctx.say('برای ثبت نهایی حداقل یک سایز را انتخاب کنید.');}
-     else if(!done){const next=chosen.includes(size)?chosen.filter(v=>v!==size):DRESS_SIZES.filter(v=>chosen.includes(v)||v===size);await run(db,'UPDATE portfolio SET sizes=? WHERE id=? AND salon_id=?',JSON.stringify(next),dress.id,salon.id);
+     else if(!done){
+      let next=null;
+      // Optimistic compare-and-swap: simultaneous button clicks must not lose size selections.
+      for(let attempt=0;attempt<4;attempt++){
+       const row=attempt?await one(db,'SELECT sizes FROM portfolio WHERE id=? AND salon_id=?',dress.id,salon.id):dress;
+       must(row,'لباس پیدا نشد',404);
+       const current=parseDressSizes(row.sizes);
+       const candidate=current.includes(size)?current.filter(v=>v!==size):DRESS_SIZES.filter(v=>current.includes(v)||v===size);
+       const updated=await run(db,"UPDATE portfolio SET sizes=? WHERE id=? AND salon_id=? AND COALESCE(sizes,'[]')=?",JSON.stringify(candidate),dress.id,salon.id,row.sizes||'[]');
+       if(updated.meta.changes){next=candidate;break}
+      }
+      must(next,'ثبت هم‌زمان سایزها کامل نشد؛ دوباره روی سایز بزنید',409);
       try{await call(env,p,'editMessageReplyMarkup',{chat_id:chat,message_id:q.message.message_id,reply_markup:sizeKeyboard(dress.id,next)})}catch(e){await ctx.say('سایزهای فعلی «'+dress.title+'»:',{reply_markup:sizeKeyboard(dress.id,next)})}
       note='سایز '+SIZE_LABEL(size)+(next.includes(size)?' انتخاب شد':' حذف شد');
     }else{note=chosen.length?'سایزهای «'+dress.title+'»: '+chosen.map(SIZE_LABEL).join('، '):'سایزی مشخص نشده';
