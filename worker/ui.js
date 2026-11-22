@@ -454,32 +454,12 @@ function botCard(bot){
 }
 // Accounts: approval, image credit and recharge requests per salon (the project owner's side of /m/<token>).
 function quotaCard(S){
- var cur=Number(S.settings&&S.settings.quota_per_line)||4,st=S.settings||{};
+ var st=S.settings||{},cur=Number(st.quota_per_line)||4;
  var f=field('s-quota','تعداد امتحان هر عروس در هر بخش',String(cur),'number','عددی بین ۱ تا ۲۰؛ پیش‌فرض ۴.');
- var i=f.querySelector('input');i.min='1';i.max='20';i.step='1';i.setAttribute('inputmode','numeric');
- var plan=el('select',{id:'mix-plan'},[
-  el('option',{value:'0',text:'بدون پلن / غیرفعال'}),
-  el('option',{value:'3',text:'پلن ۳ ماهه'}),
-  el('option',{value:'6',text:'پلن ۶ ماهه'}),
-  el('option',{value:'12',text:'پلن یک‌ساله (بدون امکان طراحی ترکیبی)'})
- ]);
- plan.value=String(Number(st.dress_mix_months)||0);
- var enabled=el('input',{type:'checkbox',id:'mix-enabled'});enabled.checked=st.dress_mix_enabled===true;
- var hint=h('p','فقط برای مزون‌های پلن ۳ یا ۶ ماهه فعال می‌شود. برای طرح ترکیبی، هر چهار بخش را مشتری از گالری انتخاب می‌کند.','hint');
- return el('section',{class:'card'},[
-  h('h2','تنظیمات استفاده و طراحی لباس'),
-  f,
-  h('h3','لباس انتخابی من — طراحی ترکیبی'),
-  el('label',{class:'field'},[el('span',{text:'پلن فعال مزون'}),plan]),
-  el('label',{class:'field'},[enabled,el('span',{text:'فعال‌سازی طراحی ترکیبی'})]),
-  hint,
-  el('button',{class:'btn btn--primary',type:'button',text:'ذخیره',onclick:act(function(){
-   var n=parseInt(i.value,10);if(!(n>=1&&n<=20))throw new Error('عددی بین ۱ تا ۲۰ بنویسید');
-   return api('/api/s/'+slug+'/owner/settings',{quota_per_line:n,dress_mix_months:Number(plan.value),dress_mix_enabled:enabled.checked,
-    generation_enabled:!!st.generation_enabled,reference_verified:!!st.reference_verified,catalog:st.catalog,
-    allow_own_dress:st.allow_own_dress,image_model:st.image_model==='fast'?'fast':'pro',
-    daily_limit:st.daily_limit,retention_days:st.retention_days}).then(function(){toast('تنظیمات ذخیره شد. با بازکردن مجدد صفحه مزون، تب طراحی ترکیبی به‌روز می‌شود.')});
-  })})
+ var i=f.querySelector('input');i.min='1';i.max='20';i.step='1';
+ var sub=st.subscription||{},active=sub.status==='active'&&Number(sub.expires_at)>Date.now()&&Number(sub.starts_at)<=Date.now();
+ return el('section',{class:'card'},[h('h2','تنظیمات استفاده'),f,h('p',active?'اشتراک فعال: '+(sub.plan_name||sub.plan_id)+' | پایان: '+new Date(sub.expires_at).toLocaleDateString('fa-IR'):'اشتراک فعال ثبت نشده؛ فعال‌سازی و تمدید فقط از ادمین اصلی آینه انجام می‌شود.','hint'),
+  el('button',{class:'btn btn--primary',type:'button',text:'ذخیره سهمیه',onclick:act(function(){var n=parseInt(i.value,10);if(!(n>=1&&n<=20))throw Error('عددی بین ۱ تا ۲۰ بنویسید');return api('/api/s/'+slug+'/owner/settings',{quota_per_line:n}).then(function(){toast('سهمیه ذخیره شد.')})})})
  ]);
 }
 function passwordCard(){
@@ -797,13 +777,9 @@ function salonPage(){return api('/api/s/'+slug+'/owner').then(function(d){
 
  // Settings
  var model=el('select',{id:'s-model'},[el('option',{value:'pro',text:'بهترین کیفیت (Nano Banana Pro، حدود ۱۸ هزار تومان)'}),el('option',{value:'fast',text:'معمولی (Nano Banana 2، حدود ۱۲ هزار تومان برای هر تصویر)'})]);model.value=S.settings.image_model==='fast'?'fast':'pro';
- var mixPlan=el('select',{id:'s-mix-plan'},[
-  el('option',{value:'0',text:'بدون اشتراک مشخص‌شده — غیرفعال'}),
-  el('option',{value:'3',text:'۳ ماهه — مجاز'}),
-  el('option',{value:'6',text:'۶ ماهه — مجاز'}),
-  el('option',{value:'12',text:'۱۲ ماهه — غیرفعال'})
- ]);mixPlan.value=String(Number(S.settings.dress_mix_months)||0);
- var set=el('section',{class:'card'},[h('h2','شبیه‌سازی'),el('label',{class:'field'},[el('span',{class:'lbl',text:'مدل ساخت تصویر'}),model,el('span',{class:'hint',text:'Pro طبیعی‌تر است و چهره را بهتر نگه می‌دارد، ولی هر تصویر حدود دو برابر هزینه دارد.'})]),check('s-gen','مشتری بتواند مدل را روی عکس خودش ببیند'+(d.image?'':' (کلید KIE هنوز تنظیم نشده)'),S.settings.generation_enabled),check('s-cat','نمایش لباس‌های نمونهٔ آماده به مشتری (پیش‌فرض خاموش: فقط لباس‌های خود مزون)',S.settings.catalog),check('s-own','مشتری بتواند عکس لباس دلخواه خودش را بارگذاری کند',S.settings.allow_own_dress),check('s-ref','انتقال از «عکس مدل من» و نمونه‌کارها آزمایش شده و کیفیتش تأیید شده است',S.settings.reference_verified),el('div',{class:'mix-plan-control'},[h('h3','لباس انتخابی من (طراحی ترکیبی)'),el('label',{class:'field'},[el('span',{class:'lbl',text:'مدت پلن مزون'}),mixPlan]),check('s-mix-enabled','نمایش تب طراحی ترکیبی برای این مزون (فقط پلن ۳ یا ۶ ماهه)',S.settings.dress_mix_enabled),h('p','اگر پلن ۱۲ ماهه یا بدون اشتراک انتخاب شود، حتی با فعال بودن این گزینه، تب ترکیبی نمایش داده نمی‌شود.','hint')]),el('label',{class:'field'},[el('span',{class:'lbl',text:'سقف تصویر روزانهٔ این مزون'}),el('input',{id:'s-cap',type:'number',min:'0',step:'1',inputmode:'numeric',value:String(Number.isInteger(S.settings.daily_limit)?S.settings.daily_limit:50)}),el('span',{class:'hint',text:'جمع تصویرهایی که همهٔ مشتری‌ها در یک روز می‌سازند. ۰ یعنی بدون سقف. هر نفر جدا از این، در هر بخش ۳ تصویر دارد.'})]),(function(){var f=field('s-quota','تعداد امتحان هر عروس در هر بخش',String(S.settings.quota_per_line||4),'number','عددی بین ۱ تا ۲۰؛ پیش‌فرض ۴.');var i=f.querySelector('input');i.min='1';i.max='20';return f})(),el('label',{class:'field'},[el('span',{class:'lbl',text:'پاک شدن خودکار عکس مشتری‌ها (روز)'}),el('input',{id:'s-keep',type:'number',min:'0',max:'3650',step:'1',inputmode:'numeric',value:String(Number.isInteger(S.settings.retention_days)?S.settings.retention_days:30)}),el('span',{class:'hint',text:'عکس و نتیجه‌ای که مشتری برای مزون نفرستاده بعد از این تعداد روز پاک می‌شود. عکس درخواست‌ها تا بسته شدن درخواست و این تعداد روز بعدش می‌ماند. ۰ یعنی هیچ‌وقت پاک نشود.'})]),el('button',{class:'btn btn--ghost',type:'button',text:'ذخیرهٔ تنظیمات',onclick:act(function(){return api('/api/s/'+slug+'/owner/settings',{daily_limit:(function(v){return isNaN(v)?50:Math.max(0,v)})(parseInt($('#s-cap').value,10)),generation_enabled:$('#s-gen').checked,dress_mix_enabled:$('#s-mix-enabled').checked,dress_mix_months:Number($('#s-mix-plan').value),reference_verified:$('#s-ref').checked,catalog:$('#s-cat').checked,allow_own_dress:$('#s-own').checked,image_model:$('#s-model').value,quota_per_line:(function(v){return v>=1&&v<=20?v:4})(parseInt($('#s-quota').value,10)),retention_days:(function(v){return isNaN(v)?30:Math.max(0,v)})(parseInt($('#s-keep').value,10))}).then(function(){toast('تنظیمات ذخیره شد.')})})})]);
+ var subscription=S.settings.subscription||{},subActive=subscription.status==='active'&&Number(subscription.expires_at)>Date.now()&&Number(subscription.starts_at)<=Date.now();
+ var subDesc=subActive?'پلن: '+(subscription.plan_name||subscription.plan_id)+' | پایان: '+new Date(subscription.expires_at).toLocaleDateString('fa-IR'):'اشتراک فعال وجود ندارد یا منقضی شده است';
+ var set=el('section',{class:'card'},[h('h2','شبیه‌سازی'),el('label',{class:'field'},[el('span',{class:'lbl',text:'مدل ساخت تصویر'}),model,el('span',{class:'hint',text:'Pro طبیعی‌تر است و چهره را بهتر نگه می‌دارد، ولی هر تصویر حدود دو برابر هزینه دارد.'})]),check('s-gen','مشتری بتواند مدل را روی عکس خودش ببیند'+(d.image?'':' (کلید KIE هنوز تنظیم نشده)'),S.settings.generation_enabled),check('s-cat','نمایش لباس‌های نمونهٔ آماده به مشتری (پیش‌فرض خاموش: فقط لباس‌های خود مزون)',S.settings.catalog),check('s-own','مشتری بتواند عکس لباس دلخواه خودش را بارگذاری کند',S.settings.allow_own_dress),check('s-ref','انتقال از «عکس مدل من» و نمونه‌کارها آزمایش شده و کیفیتش تأیید شده است',S.settings.reference_verified),el('div',{class:'mix-plan-control'},[h('h3','اشتراک و طراحی ترکیبی'),h('p',subDesc+' | دسترسی طراحی ترکیبی فقط در اشتراک سه یا شش ماهه فعال است. این بخش صرفاً نمایشی است؛ فعال‌سازی از ادمین اصلی انجام می‌شود.','hint')]),el('label',{class:'field'},[el('span',{class:'lbl',text:'سقف تصویر روزانهٔ این مزون'}),el('input',{id:'s-cap',type:'number',min:'0',step:'1',inputmode:'numeric',value:String(Number.isInteger(S.settings.daily_limit)?S.settings.daily_limit:50)}),el('span',{class:'hint',text:'جمع تصویرهایی که همهٔ مشتری‌ها در یک روز می‌سازند. ۰ یعنی بدون سقف. هر نفر جدا از این، در هر بخش ۳ تصویر دارد.'})]),(function(){var f=field('s-quota','تعداد امتحان هر عروس در هر بخش',String(S.settings.quota_per_line||4),'number','عددی بین ۱ تا ۲۰؛ پیش‌فرض ۴.');var i=f.querySelector('input');i.min='1';i.max='20';return f})(),el('label',{class:'field'},[el('span',{class:'lbl',text:'پاک شدن خودکار عکس مشتری‌ها (روز)'}),el('input',{id:'s-keep',type:'number',min:'0',max:'3650',step:'1',inputmode:'numeric',value:String(Number.isInteger(S.settings.retention_days)?S.settings.retention_days:30)}),el('span',{class:'hint',text:'عکس و نتیجه‌ای که مشتری برای مزون نفرستاده بعد از این تعداد روز پاک می‌شود. عکس درخواست‌ها تا بسته شدن درخواست و این تعداد روز بعدش می‌ماند. ۰ یعنی هیچ‌وقت پاک نشود.'})]),el('button',{class:'btn btn--ghost',type:'button',text:'ذخیرهٔ تنظیمات',onclick:act(function(){return api('/api/s/'+slug+'/owner/settings',{daily_limit:(function(v){return isNaN(v)?50:Math.max(0,v)})(parseInt($('#s-cap').value,10)),generation_enabled:$('#s-gen').checked,reference_verified:$('#s-ref').checked,catalog:$('#s-cat').checked,allow_own_dress:$('#s-own').checked,image_model:$('#s-model').value,quota_per_line:(function(v){return v>=1&&v<=20?v:4})(parseInt($('#s-quota').value,10)),retention_days:(function(v){return isNaN(v)?30:Math.max(0,v)})(parseInt($('#s-keep').value,10))}).then(function(){toast('تنظیمات ذخیره شد.')})})})]);
 
  // Portfolio
  var ports=el('div',{class:'ports'});
