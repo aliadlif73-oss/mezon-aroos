@@ -29,7 +29,7 @@ async function priceConfig(db){
 }
 function displayPricing(data){
  const now=Date.now(),campaignActive=Boolean(data.campaign)&&Number(data.campaign_end)>now;
- return {campaign:campaignActive?data.campaign:'',campaign_end:campaignActive?data.campaign_end:null,plans:data.plans.map(p=>({...p,price:campaignActive&&p.promo!==null?p.promo:p.base,discount_active:campaignActive&&p.promo!==null}))};
+ return {campaign:campaignActive?data.campaign:'',campaign_end:campaignActive?data.campaign_end:null,plans:data.plans.map(p=>({...p,features:['three','six'].includes(p.id)&&!(p.features||[]).some(x=>String(x).includes('طراحی ترکیبی'))?[...(p.features||[]),'طراحی ترکیبی لباس عروس (لباس انتخابی من)']:p.features,price:campaignActive&&p.promo!==null?p.promo:p.base,discount_active:campaignActive&&p.promo!==null}))};
 }
 function validatePricing(b){
  must(b&&Array.isArray(b.plans)&&b.plans.length===3,'سه پلن قیمت‌گذاری لازم است');
