@@ -5,6 +5,7 @@ import {owner} from './server.js';
 import {putImage,maxUpload} from './storage.js';
 import {newLinkCode} from './telegram.js';
 import {normalizeDressSizes} from './dress-sizes.js';
+import {PLAN_MONTHS,addPlanMonths,subscriptionState} from './subscriptions.js';
 
 const enc=new TextEncoder();
 const J=(v,status=200,headers={})=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json;charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff',...headers}});
@@ -148,6 +149,30 @@ export async function salesApi(req,env){
   await exec(db,'INSERT INTO app_settings(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at','sales_plans',JSON.stringify(cfg),Date.now());
   return J({ok:true,pricing:cfg});
  }
+ if(p==='/api/sales/admin/subscription'&&post){
+  await owner(req,env);
+  const b=await body(),slug=validSlug(b.slug),planId=String(b.plan_id||''),months=PLAN_MONTHS[planId];
+  must(months,'پلن انتخاب‌شده معتبر نیست',400);
+  // Explicit platform-admin action, not a sales-stage update or a payment claim.
+  const salon=await first(db,'SELECT id,slug,settings,credit_limit,approved FROM salons WHERE slug=?',slug);
+  must(salon,'مزون موردنظر پیدا نشد',404);
+  must(salon.approved===1,'برای این مزون ابتدا باید تأیید فعالیت انجام شود',403);
+  const settings=parse(salon.settings),current=subscriptionState(settings);
+  must(!current.active,'اشتراک این مزون هنوز فعال است؛ تمدید یا تغییر پلن نیازمند تسویه و فرآیند مستقل است',409);
+  const options=displayPricing(await priceConfig(db)).plans;
+  const plan=options.find(p=>p.id===planId);
+  must(plan,'پلن در تعرفه فروش وجود ندارد',409);
+  const gift=Number(plan.gift);
+  must(Number.isSafeInteger(gift)&&gift>=0,'اعتبار هدیه این پلن در ادمین تعرفه‌ها تعیین نشده است',409);
+  const now=Date.now(),subscription={status:'active',plan_id:planId,starts_at:now,expires_at:addPlanMonths(now,months),images_granted:gift,price_paid:plan.price,plan_name:plan.name};
+  const before=Number(salon.credit_limit)||0,newLimit=before+gift;
+  // Store entitlement, credit and an audit ledger in a single D1 transaction.
+  await db.batch([
+   db.prepare('UPDATE salons SET settings=?,credit_limit=? WHERE id=?').bind(JSON.stringify({...settings,subscription}),newLimit,salon.id),
+   db.prepare('INSERT INTO credit_ledger(id,salon_id,amount,method,ref,by_who,limit_after,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(uid(),salon.id,gift,'subscription',planId,'platform-admin',newLimit,now)
+  ]);
+  return J({ok:true,slug,subscription,credit_limit:newLimit});
+ }
  if(p==='/api/sales/admin/status'&&post){
   await owner(req,env);const b=await body();
   const active=b.active===true?1:0,who=await first(db,'SELECT id FROM marketers WHERE id=?',String(b.id||''));
@@ -232,7 +257,7 @@ export async function salesApi(req,env){
   ]);
   const pf=parse(salon.profile),needed=['logo','cover','address','phone','instagram','city'];
   const metrics={visitors:Number(v?.n||0),tryons:Number(g?.n||0),requests:Number(l?.n||0),dresses:portfolio.length,profile_done:needed.filter(k=>!!pf[k]).length,profile_total:needed.length};
-  return J({salon:showSalon(salon),portfolio,metrics,url:links(env,salon.slug)});
+  return J({salon:{...showSalon(salon),subscription:subscriptionState(parse(salon.settings))},portfolio,metrics,url:links(env,salon.slug)});
  }
  if(p==='/api/sales/salons/customers'&&req.method==='GET'){
   const salon=await ownSalon(db,rep,String(u.searchParams.get('slug')||''));
