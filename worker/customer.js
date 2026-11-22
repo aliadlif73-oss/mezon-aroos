@@ -1064,7 +1064,7 @@ function stepModel(){
   box.append(grid);
   if(state.style!==null&&!state.reference)box.append(pickedBar('لباس انتخابی: '+LIST[state.style][0],function(){pickLook(function(){state.style=null})}));
  }else if(state.tab==='mix'){
-  box.append(h('p','مدل موردعلاقه‌ات را از هر قسمت انتخاب کن؛ طرح ترکیبی روی تصویر خودت ساخته می‌شود. این یک پیش‌نمایش طراحی است، نه تضمین امکان دوخت یا سایز واقعی.','hint'));
+  box.append(h('p','طرح دلخواهت را از هر قسمت انتخاب کن؛ طرح ترکیبی روی تصویر خودت ساخته می‌شود. این یک پیش‌نمایش طراحی است، نه تضمین امکان دوخت یا سایز واقعی.','hint'));
   ['bodice','skirt','sleeves','neckline'].forEach(function(kind){
    var wrap=el('section',{class:'mix-section'},[h('h3',MIX_LABELS[kind],'mix-section__title')]);
    var grid=el('div',{class:'mix-options'});
