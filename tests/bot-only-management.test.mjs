@@ -94,3 +94,43 @@ test('single-use admin invite links exactly one Telegram manager chat and CRM ne
   assert.equal(bot.calls.some(x=>x.method==='sendMessage'&&String(x.body.text).includes('09121234567')),false,'unlinked chat cannot read customers');
  }finally{bot.restore()}
 });
+
+test('bot roles never collide with past bride links, and /team preserves unfinished dress uploads',async()=>{
+ const env=fixture(),bot=captureBot();
+ try{
+  const sid=await make(env,'safe-roles');
+  // This chat was once a customer, then legally became a salon manager.
+  await hook(env,303,'/start c_safe-roles');
+  assert.equal(env.DB.sql.prepare('SELECT COUNT(*) n FROM bot_customers WHERE chat_id=?').get('303').n,1);
+  const invite=await req(env,'/api/s/safe-roles/owner/telegram-link',{},true);
+  await hook(env,303,'/start '+invite.data.links.telegram.split('start=')[1]);
+  bot.calls.length=0;await hook(env,303,'/help');
+  const guide=bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text;
+  assert.match(guide,/راهنمای مدیر مزون/,'manager commands take priority over stale bride context');
+  bot.calls.length=0;await hook(env,303,'/start c_safe-roles');
+  assert.match(bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text,/به مدیریت مزون متصل/);
+  await hook(env,303,'/newdress');
+  let draft=JSON.parse(env.DB.sql.prepare('SELECT bot_state FROM salons WHERE id=?').get(sid).bot_state);
+  assert.equal(draft.dressUpload.stage,'photos');
+  bot.calls.length=0;await hook(env,303,'/team');
+  assert.match(bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text,/ثبت لباس هنوز تمام نشده/);
+  draft=JSON.parse(env.DB.sql.prepare('SELECT bot_state FROM salons WHERE id=?').get(sid).bot_state);
+  assert.equal(draft.dressUpload.stage,'photos','the /team command must not orphan the draft');
+  await hook(env,303,'/cancel');
+  assert.equal(env.DB.sql.prepare('SELECT bot_state FROM salons WHERE id=?').get(sid).bot_state,'');
+ }finally{bot.restore()}
+});
+test('staff member cannot use legacy customer referral link in bot-only mode',async()=>{
+ const env=fixture(),bot=captureBot();
+ try{
+  await make(env,'team-lock');
+  const resp=await req(env,'/api/s/team-lock/owner/team',{name:'کارشناس لباس',specialty:'فروش'},true);
+  assert.equal(resp.status,200,JSON.stringify(resp));
+  const code=resp.data.links.telegram.split('start=')[1];
+  await hook(env,404,'/start '+code);
+  bot.calls.length=0;await hook(env,404,'/link');
+  const reply=bot.calls.filter(x=>x.method==='sendMessage').at(-1).body.text;
+  assert.match(reply,/غیرفعال/);
+  assert.doesNotMatch(reply,/\?r=/);
+ }finally{bot.restore()}
+});
