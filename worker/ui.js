@@ -455,9 +455,32 @@ function botCard(bot){
 // Accounts: approval, image credit and recharge requests per salon (the project owner's side of /m/<token>).
 function quotaCard(S){
  var cur=Number(S.settings&&S.settings.quota_per_line)||4,st=S.settings||{};
- var f=field('s-quota','تعداد امتحان هر عروس در هر بخش',String(cur),'number','عددی بین ۱ تا ۲۰؛ پیش‌فرض ۴. وقتی عروسی همهٔ امتحان‌هایش را انجام دهد، به شما خبر می‌دهیم.');
+ var f=field('s-quota','تعداد امتحان هر عروس در هر بخش',String(cur),'number','عددی بین ۱ تا ۲۰؛ پیش‌فرض ۴.');
  var i=f.querySelector('input');i.min='1';i.max='20';i.step='1';i.setAttribute('inputmode','numeric');
- return el('section',{class:'card'},[h('h2','سهم امتحان عروس‌ها'),f,el('button',{class:'btn btn--primary',type:'button',text:'ذخیره',onclick:act(function(){var n=parseInt(i.value,10);if(!(n>=1&&n<=20))throw new Error('عددی بین ۱ تا ۲۰ بنویسید');return api('/api/s/'+slug+'/owner/settings',{quota_per_line:n,generation_enabled:!!st.generation_enabled,reference_verified:!!st.reference_verified,catalog:st.catalog,allow_own_dress:st.allow_own_dress,image_model:st.image_model==='fast'?'fast':'pro',daily_limit:st.daily_limit,retention_days:st.retention_days}).then(function(){toast('ذخیره شد.')})})})]);
+ var plan=el('select',{id:'mix-plan'},[
+  el('option',{value:'0',text:'بدون پلن / غیرفعال'}),
+  el('option',{value:'3',text:'پلن ۳ ماهه'}),
+  el('option',{value:'6',text:'پلن ۶ ماهه'}),
+  el('option',{value:'12',text:'پلن یک‌ساله (بدون امکان طراحی ترکیبی)'})
+ ]);
+ plan.value=String(Number(st.dress_mix_months)||0);
+ var enabled=el('input',{type:'checkbox',id:'mix-enabled'});enabled.checked=st.dress_mix_enabled===true;
+ var hint=h('p','فقط برای مزون‌های پلن ۳ یا ۶ ماهه فعال می‌شود. برای طرح ترکیبی، هر چهار بخش را مشتری از گالری انتخاب می‌کند.','hint');
+ return el('section',{class:'card'},[
+  h('h2','تنظیمات استفاده و طراحی لباس'),
+  f,
+  h('h3','لباس انتخابی من — طراحی ترکیبی'),
+  el('label',{class:'field'},[el('span',{text:'پلن فعال مزون'}),plan]),
+  el('label',{class:'field'},[enabled,el('span',{text:'فعال‌سازی طراحی ترکیبی'})]),
+  hint,
+  el('button',{class:'btn btn--primary',type:'button',text:'ذخیره',onclick:act(function(){
+   var n=parseInt(i.value,10);if(!(n>=1&&n<=20))throw new Error('عددی بین ۱ تا ۲۰ بنویسید');
+   return api('/api/s/'+slug+'/owner/settings',{quota_per_line:n,dress_mix_months:Number(plan.value),dress_mix_enabled:enabled.checked,
+    generation_enabled:!!st.generation_enabled,reference_verified:!!st.reference_verified,catalog:st.catalog,
+    allow_own_dress:st.allow_own_dress,image_model:st.image_model==='fast'?'fast':'pro',
+    daily_limit:st.daily_limit,retention_days:st.retention_days}).then(function(){toast('تنظیمات ذخیره شد. با بازکردن مجدد صفحه مزون، تب طراحی ترکیبی به‌روز می‌شود.')});
+  })})
+ ]);
 }
 function passwordCard(){
  var cur=field('pw-cur','رمز فعلی','', 'password'),nw=field('pw-new','رمز تازه (حداقل ۸ نویسه)','', 'password'),nw2=field('pw-new2','تکرار رمز تازه','', 'password');
