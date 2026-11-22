@@ -693,18 +693,18 @@ function marketerPricingCard(){
 
 function botHealthCard(){
  var box=el('section',{class:'card stack'},[h('h2','عیب‌یابی اتصال ربات'),h('p','بررسی مستقیم از Cloudflare و API تلگرام؛ صرفاً وجود توکن کافی نیست.','lead')]);
- var status=h('p','در حال بررسی اتصال…','hint');box.append(status);
+ var status=el('div',{class:'stack'},[h('p','در حال بررسی اتصال…','hint')]);box.append(status);
  function refresh(){
   return api('/api/owner/bot-health').then(function(d){
    var t=d.telegram||{},b=d.bale||{};
-   status.replaceChildren(
+   status.replaceChildren.apply(status,[
     h('b',t.connected?'✅ وبهوک تلگرام روی دامنه آینه ثبت شده':'⚠️ اتصال تلگرام تأیید نشده'),
     h('p',t.token_configured?'توکن تلگرام در سرور وجود دارد.':'توکن تلگرام در سرور تنظیم نشده است.','hint'),
     h('p','پیام‌های منتظر: '+fa(t.pending_updates||0),'hint'),
     t.last_error?h('p','آخرین خطای ثبت‌شده تلگرام: '+t.last_error,'notice notice--warn'):null,
     t.error?h('p',t.error,'notice notice--warn'):null,
     h('p','بله: '+(b.token_configured?'توکن در سرور موجود است؛ وبهوک هنوز از این بخش تأیید نشده.':'توکن تنظیم نشده است.'),'hint')
-   );
+   ].filter(Boolean));
   }).catch(function(e){status.textContent='دریافت وضعیت اتصال ممکن نشد: '+e.message});
  }
  box.append(el('button',{class:'btn btn--soft',type:'button',text:'بررسی مجدد اتصال',onclick:act(refresh)}));
