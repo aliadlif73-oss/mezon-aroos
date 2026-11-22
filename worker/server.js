@@ -210,7 +210,7 @@ export async function api(req,env){const u=new URL(req.url),path=u.pathname;must
  if(req.method!=='GET'){must(req.headers.get('origin')===u.origin,'درخواست از این نشانی مجاز نیست',403);must(Number(req.headers.get('content-length')||0)<12000000,'حجم درخواست زیاد است',413);}
  if(path==='/api/owner/bot-health'&&req.method==='GET'){
   await owner(req,env);
-  const origin=(env.APP_ORIGIN||u.origin).replace(new RegExp('/+
+  const rawOrigin=env.APP_ORIGIN||u.origin;const origin=rawOrigin.endsWith('/')?rawOrigin.slice(0,-1):rawOrigin;
   const expected=origin+'/api/telegram/webhook';
   const telegram={token_configured:!!env.TELEGRAM_BOT_TOKEN,webhook_secret_configured:!!env.TELEGRAM_WEBHOOK_SECRET,expected_url:expected,connected:false};
   if(telegram.token_configured){
