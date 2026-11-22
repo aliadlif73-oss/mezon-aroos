@@ -39,13 +39,14 @@ test('only owner can provision marketers and passwords are hashed',async()=>{
  assert.equal((await call(e,'/api/sales/login',{username:'repone',password:'incorrect'})).status,401);
  assert.equal((await call(e,'/api/sales/me')).data.loggedIn,false);
 });
-test('marketers only see own salons, can create draft without AI credit or owner permissions',async()=>{
+test('marketers only see own salons; creation activates AI with preset credit but no owner permissions',async()=>{
  const e=fixture();await rep(e,'repone');await rep(e,'reptwo');
  const one=await login(e,'repone'),two=await login(e,'reptwo');
  const made=await call(e,'/api/sales/salons/create',{name:'مزون اول',slug:'bridal-one',contact_name:'خانم تست',contact_phone:'09121234567',profile:{city:'تهران'}},one);
  assert.equal(made.status,200,JSON.stringify(made));
  const row=e.DB.sql.prepare('SELECT approved,credit_limit,settings,owner_id FROM salons WHERE slug=?').get('bridal-one');
- assert.equal(row.approved,0);assert.equal(row.credit_limit,0);assert.equal(JSON.parse(row.settings).generation_enabled,false);
+ assert.equal(row.approved,1);assert.equal(row.credit_limit,10);assert.equal(JSON.parse(row.settings).generation_enabled,true);
+ assert.equal(e.DB.sql.prepare('SELECT amount FROM credit_ledger WHERE salon_id=(SELECT id FROM salons WHERE slug=?)').get('bridal-one').amount,10);
  assert.match(row.owner_id,/^sales:/);
  assert.equal((await call(e,'/api/owner',undefined,one)).status,401);
  assert.equal((await call(e,'/api/s/bridal-one/owner',undefined,one)).status,401);
@@ -75,7 +76,8 @@ test('uploads are scoped, portfolio publishing works, admin approval enables bot
  const saved=await call(e,'/api/sales/salons/portfolio',{slug:'bridal-two',title:'لباس پرنسسی',media_ids:[dress.data.id],sizes:['38','40']},one);
  assert.equal(saved.status,200,JSON.stringify(saved));
  assert.equal((await call(e,'/api/s/bridal-two/public')).data.portfolio.length,1);
- const approve=await call(e,'/api/owner/account',{slug:'bridal-two',approved:true},owner);
+ assert.equal((await call(e,'/api/sales/salons/bot-link',{slug:'bridal-two'},one)).status,403,'AI activation is not bot authorization');
+ const approve=await call(e,'/api/sales/admin/bot-approve',{slug:'bridal-two',approved:true},owner);
  assert.equal(approve.status,200,JSON.stringify(approve));
  const link=await call(e,'/api/sales/salons/bot-link',{slug:'bridal-two'},one);
  assert.equal(link.status,200,JSON.stringify(link));assert.match(link.data.links.telegram,/^https:\/\/t\.me\//);
@@ -88,4 +90,66 @@ test('disabling a rep revokes sessions and CSRF is checked',async()=>{
  assert.equal((await call(e,'/api/sales/admin/status',{id,active:false},owner)).status,200);
  assert.equal((await call(e,'/api/sales/salons',undefined,one)).status,401);
  assert.equal((await call(e,'/api/sales/login',{username:'repone',password:'TestSecret12345!'})).status,401);
+});
+
+test('owner sets next-salon credits by marketer; sales limits cannot be bypassed by global test mode',async()=>{
+ const e=fixture(),id=await rep(e,'repone');
+ const caps=await call(e,'/api/sales/admin/credits',{id,initial_credits:37},owner);
+ assert.equal(caps.status,200,JSON.stringify(caps));
+ assert.equal((await call(e,'/api/sales/admin/credits',{id,initial_credits:2000},owner)).status,400);
+ const who=await login(e,'repone');e.LIMITS_OFF='1';
+ const make=await call(e,'/api/sales/salons/create',{slug:'credit-verified',name:'مزون اعتباری'},who);
+ assert.equal(make.status,200,JSON.stringify(make));assert.equal(make.data.credits,37);
+ const row=e.DB.sql.prepare('SELECT approved,credit_limit,settings FROM salons WHERE slug=?').get('credit-verified');
+ assert.equal(row.approved,1);assert.equal(row.credit_limit,37);
+ assert.equal(JSON.parse(row.settings).daily_limit,37);
+ const guest=await call(e,'/api/s/credit-verified/session',{});assert.equal(guest.status,200);
+ const session=await call(e,'/api/s/credit-verified/session',undefined,{'cookie':guest.cookie});
+ assert.equal(session.status,200,JSON.stringify(session));assert.ok(session.data.quota,'sales credit cap must survive LIMITS_OFF=1');
+});
+test('marketer can only GET customers of own salon, with full phone and name but no edit route',async()=>{
+ const e=fixture();await rep(e,'repone');await rep(e,'reptwo');
+ const one=await login(e,'repone'),two=await login(e,'reptwo');
+ for(const [slug,cookie] of [['one-data',one],['two-data',two]]){
+  assert.equal((await call(e,'/api/sales/salons/create',{slug,name:'مزون '+slug},cookie)).status,200);
+  const id=e.DB.sql.prepare('SELECT id FROM salons WHERE slug=?').get(slug).id;
+  const sess=crypto.randomUUID(),now=Date.now();
+  e.DB.sql.prepare('INSERT INTO sessions(id,salon_id,token_hash,expires_at,created_at) VALUES(?,?,?,?,?)').run(sess,id,crypto.randomUUID().replaceAll('-',''),now+600000,now);
+  e.DB.sql.prepare('INSERT INTO leads(id,salon_id,session_id,name,phone,original_id,idem,created_at,status,salon_status) VALUES(?,?,?,?,?,?,?,?,?,?)').run(crypto.randomUUID(),id,sess,slug+' عروس','+989121234567',crypto.randomUUID(),crypto.randomUUID(),now,'sent','new');
+ }
+ const own=await call(e,'/api/sales/salons/customers?slug=one-data',undefined,one);
+ assert.equal(own.status,200,JSON.stringify(own));assert.equal(own.data.customers.length,1);
+ assert.equal(own.data.customers[0].name,'one-data عروس');assert.equal(own.data.customers[0].phone,'+989121234567');
+ assert(!('original_id' in own.data.customers[0]),'no customer private media IDs in sales CRM');
+ assert.equal((await call(e,'/api/sales/salons/customers?slug=two-data',undefined,one)).status,404);
+ assert.equal((await call(e,'/api/sales/salons/customers?slug=one-data',undefined,two)).status,404);
+ assert.equal((await call(e,'/api/sales/salons/customers?slug=one-data',{status:'deleted'},one)).status,404);
+});
+test('pricing remains readonly to marketer, and campaign expires back to base rates',async()=>{
+ const e=fixture();await rep(e,'repone');
+ const one=await login(e,'repone');
+ const p=await call(e,'/api/sales/pricing',undefined,one);assert.equal(p.status,200,JSON.stringify(p));
+ assert.equal(p.data.plans.length,3);
+ assert.equal((await call(e,'/api/sales/admin/pricing',undefined,one)).status,401);
+ assert.equal((await call(e,'/api/sales/admin/pricing',{plans:[]},one)).status,401);
+ const cfg=await call(e,'/api/sales/admin/pricing',undefined,owner);assert.equal(cfg.status,200);
+ const edited={...cfg.data.pricing,campaign:'ویژه',campaign_end:Date.now()+3600000};
+ edited.plans[0].base=25000000;edited.plans[0].promo=13000000;
+ assert.equal((await call(e,'/api/sales/admin/pricing',edited,owner)).status,200);
+ const active=await call(e,'/api/sales/pricing',undefined,one);assert.equal(active.data.plans[0].price,13000000);
+ edited.campaign_end=Date.now()-1000;
+ assert.equal((await call(e,'/api/sales/admin/pricing',edited,owner)).status,200);
+ const expired=await call(e,'/api/sales/pricing',undefined,one);assert.equal(expired.data.plans[0].price,25000000);
+});
+test('owner approves bot only for assigned salon, and cannot be rotated after linking',async()=>{
+ const e=fixture();await rep(e,'repone');const one=await login(e,'repone');
+ await call(e,'/api/sales/salons/create',{slug:'bot-check',name:'مزون ربات'},one);
+ assert.equal((await call(e,'/api/sales/admin/bot-approve',{slug:'bogus',approved:true},owner)).status,404);
+ const list=await call(e,'/api/sales/admin/pending-bots',undefined,owner);
+ assert.equal(list.status,200);assert.equal(list.data.salons[0].bot_link_approved,0);
+ assert.equal((await call(e,'/api/sales/admin/bot-approve',{slug:'bot-check',approved:true},one)).status,401);
+ assert.equal((await call(e,'/api/sales/admin/bot-approve',{slug:'bot-check',approved:true},owner)).status,200);
+ assert.equal((await call(e,'/api/sales/salons/bot-link',{slug:'bot-check'},one)).status,200);
+ e.DB.sql.prepare('UPDATE salons SET telegram_chat_id=? WHERE slug=?').run('12345','bot-check');
+ assert.equal((await call(e,'/api/sales/salons/bot-link',{slug:'bot-check'},one)).status,403);
 });
