@@ -153,3 +153,28 @@ test('owner approves bot only for assigned salon, and cannot be rotated after li
  e.DB.sql.prepare('UPDATE salons SET telegram_chat_id=? WHERE slug=?').run('12345','bot-check');
  assert.equal((await call(e,'/api/sales/salons/bot-link',{slug:'bot-check'},one)).status,403);
 });
+
+test('platform admin activates subscription once and grants exactly the advertised credits',async()=>{
+ const e=fixture();
+ await rep(e,'repplan');const repHeaders=await login(e,'repplan');
+ await call(e,'/api/sales/salons/create',{slug:'plan-test',name:'مزون اشتراک'},repHeaders);
+ const before=e.DB.sql.prepare('SELECT credit_limit,settings FROM salons WHERE slug=?').get('plan-test');
+ assert.equal(before.credit_limit,10);
+ assert.equal((await call(e,'/api/sales/admin/subscription',{slug:'plan-test',plan_id:'three'},repHeaders)).status,401);
+ assert.equal((await call(e,'/api/s/plan-test/public')).data.mix_enabled,false);
+ const grant=await call(e,'/api/sales/admin/subscription',{slug:'plan-test',plan_id:'three'},owner);
+ assert.equal(grant.status,200,JSON.stringify(grant));
+ assert.equal(grant.data.subscription.plan_id,'three');
+ assert.equal(grant.data.subscription.images_granted,100);
+ assert.equal(grant.data.credit_limit,110);
+ const active=await call(e,'/api/s/plan-test/public');
+ assert.equal(active.data.mix_enabled,true);
+ assert.equal(active.data.subscription.active,true);
+ assert.equal((await call(e,'/api/sales/admin/subscription',{slug:'plan-test',plan_id:'three'},owner)).status,409,'no duplicate credit grants');
+ assert.equal(e.DB.sql.prepare('SELECT COUNT(*) n FROM credit_ledger WHERE salon_id=(SELECT id FROM salons WHERE slug=?) AND method=?').get('plan-test','subscription').n,1);
+ const expired=JSON.parse(e.DB.sql.prepare('SELECT settings FROM salons WHERE slug=?').get('plan-test').settings);
+ expired.subscription.expires_at=Date.now()-1000;
+ e.DB.sql.prepare('UPDATE salons SET settings=? WHERE slug=?').run(JSON.stringify(expired),'plan-test');
+ assert.equal((await call(e,'/api/s/plan-test/public')).data.mix_enabled,false);
+ assert.equal((await call(e,'/api/s/plan-test/public')).data.generation,false);
+});
