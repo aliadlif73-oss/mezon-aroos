@@ -111,7 +111,7 @@ export async function sendWelcome(ctx,{panel=false,force=false}={}){
  if(panel){
   await run(ctx.db,"UPDATE promo_queue SET status='skipped',error='linked salon chat',updated_at=? WHERE platform=? AND chat_id=? AND status='pending'",Date.now(),ctx.p,String(ctx.chat)).catch(()=>{});
  }else{
-  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:'intro',force})}catch(e){console.error('schedule intro',e?.message)}
+  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:force?'introf':'intro',force})}catch(e){console.error('schedule intro',e?.message)}
  }
  // Primary path: keep this request's isolate alive and send when due. The queue row is the fallback; processDue claims rows atomically, so the video can never go twice.
  if(queued&&ctx.wait)ctx.wait(timing.sleep(VIDEO_DELAY+500).then(()=>processDue(ctx.env,{origin:ctx.origin,limit:5})).catch(()=>{}));
