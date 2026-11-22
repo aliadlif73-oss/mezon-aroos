@@ -4,9 +4,9 @@ import {MIX_COLLECTION,MIX_KEYS,validMix,mixPrompt} from '../worker/bridal-mix.j
 import {customerHTML} from '../worker/customer.js';
 import {api} from '../worker/server.js';
 
-test('all four bridal component groups offer three starter options',()=>{
+test('all four bridal component groups offer four distinct options',()=>{
  assert.deepEqual(MIX_KEYS,['bodice','skirt','sleeves','neckline']);
- for(const key of MIX_KEYS){assert.equal(MIX_COLLECTION[key].length,3);for(const it of MIX_COLLECTION[key])assert(it[0]&&it[1]);}
+ for(const key of MIX_KEYS){assert.equal(MIX_COLLECTION[key].length,4);for(const it of MIX_COLLECTION[key])assert(it[0]&&it[1]);}
  const selection={bodice:0,skirt:1,sleeves:2,neckline:0};
  assert(validMix(selection));
  assert(!validMix({bodice:2}));
@@ -27,4 +27,7 @@ test('the existing photo and regular salon/catalog tabs remain alongside the new
  assert.match(customerHTML,/لباس انتخابی من/);
  assert.match(customerHTML,/mix_parts:state.mix/);
  assert.match(customerHTML,/state.tab==='mix'/);
+ assert.match(customerHTML,/\/bridal-mix\//);
+ assert.match(customerHTML,/grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(customerHTML,/background-size:400% 300%/);
 });
