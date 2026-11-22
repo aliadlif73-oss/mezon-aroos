@@ -18,6 +18,8 @@ import {legalHTML} from './legal.js';
 import {panelPage} from './credits.js';
 import {subOf} from './manager.js';
 import {registerHTML} from './register.js';
+import {salesApi} from './sales.js';
+import {salesHTML} from './sales-ui.js';
 const htmlHeaders={'Content-Type':'text/html;charset=utf-8','Cache-Control':'no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff','X-Frame-Options':'DENY','Content-Security-Policy':"default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; font-src 'self' data:; media-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",'Permissions-Policy':'camera=(self), geolocation=(), microphone=()'};
 // Only real pages are served the app shell; everything else is a 404, never a blank app page.
 const pages=[/^\/admin\/?$/,/^\/admin\/[a-z0-9-]{1,64}\/?$/,/^\/s\/[a-z0-9-]{1,64}\/?$/,/^\/i\/[a-z0-9-]{1,64}\/?$/,/^\/p\/[a-f0-9]{32}\/?$/,/^\/m\/[a-f0-9]{32}\/?$/,/^\/signin-with-chatgpt(\/.*)?$/];
@@ -58,7 +60,9 @@ export default {
   if(u.pathname==='/api/internal/tick'){must(request.method==='POST','متد مجاز نیست',405);must(env.JOB_TOKEN&&request.headers.get('Authorization')==='Bearer '+env.JOB_TOKEN,'دسترسی مجاز نیست',403);return Response.json(await tick(env,u.origin));}
   if(u.pathname==='/api/telegram/webhook'){const r=await webhook(request,env,ctx);processSoon(env,env.APP_ORIGIN||u.origin,ctx);return r}
   if(u.pathname.startsWith('/api/bale/webhook/')){const r=await baleWebhook(request,env,decodeURIComponent(u.pathname.slice(18)),ctx);processSoon(env,env.APP_ORIGIN||u.origin,ctx);return r}
+  if(u.pathname.startsWith('/api/sales/'))return await salesApi(request,env);
   if(u.pathname.startsWith('/api/'))return await api(request,env);
+  if(u.pathname==='/sales'||u.pathname==='/sales/')return new Response(salesHTML,{headers:htmlHeaders});
   if(u.pathname==='/favicon.svg')return new Response(favicon,{headers:{'Content-Type':'image/svg+xml','Cache-Control':'public,max-age=86400'}});
   if(u.pathname.startsWith('/fonts/')){const f=fontResponse(u.pathname.slice(7));if(f)return f;}
   {const sub=subOf(u,env);if(sub&&(u.pathname==='/'||/^\/manager\/?$/.test(u.pathname))){
@@ -72,7 +76,7 @@ export default {
   if((u.pathname==='/register'||u.pathname==='/register/')&&botOnlyManagement(env))return new Response(null,{status:302,headers:{Location:'/', 'Cache-Control':'no-store'}});
   if(u.pathname==='/register'||u.pathname==='/register/')return new Response(registerHTML,{headers:{...htmlHeaders,'Cache-Control':'public,max-age=300'}});
   if(u.pathname==='/privacy'||u.pathname==='/terms')return new Response(legalHTML,{headers:{...htmlHeaders,'Cache-Control':'public,max-age=3600'}});
-  if(u.pathname==='/robots.txt'){const o=env.APP_ORIGIN||u.origin;return new Response('User-agent: *\nAllow: /\nAllow: /s/\nDisallow: /api/\nDisallow: /admin\nDisallow: /manager\nDisallow: /register\nDisallow: /r/\n\nSitemap: '+o+'/sitemap.xml\n',{headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public,max-age=3600'}})}
+  if(u.pathname==='/robots.txt'){const o=env.APP_ORIGIN||u.origin;return new Response('User-agent: *\nAllow: /\nAllow: /s/\nDisallow: /api/\nDisallow: /admin\nDisallow: /sales\nDisallow: /manager\nDisallow: /register\nDisallow: /r/\n\nSitemap: '+o+'/sitemap.xml\n',{headers:{'Content-Type':'text/plain; charset=utf-8','Cache-Control':'public,max-age=3600'}})}
   if(u.pathname==='/sitemap.xml'){const o=env.APP_ORIGIN||u.origin;return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'+['/','/s/demo'].map(p=>'<url><loc>'+o+p+'</loc></url>').join('')+'</urlset>',{headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'public,max-age=3600'}})}
   if(u.pathname==='/'){ctx?.waitUntil(ensureWebhook(env,u.origin));processSoon(env,env.APP_ORIGIN||u.origin,ctx);return new Response(referenceLandingFor(env.APP_ORIGIN||u.origin),{headers:{...htmlHeaders,'Cache-Control':'public,max-age=300'}})}
   {const m=/^\/u\/([a-f0-9]{12})(\/photo)?$/.exec(u.pathname);if(m){if(m[2]){if(request.method!=='POST')return new Response('Method not allowed',{status:405});return await pairUpload(env,request,m[1])}return await pairPage(env,m[1],notFound)}}
