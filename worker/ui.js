@@ -674,7 +674,7 @@ function marketerPricingCard(){
  function load(){return api('/api/sales/admin/pricing').then(function(d){
   cfg=d.pricing;
   var campaign=field('pcampaign','عنوان کمپین',cfg.campaign||'');
-  var end=field('pend','پایان کمپین (زمان محلی مرورگر)',cfg.campaign_end?new Date(cfg.campaign_end-new Date(cfg.campaign_end).getTimezoneOffset()*60000).toISOString().slice(0,16):'','datetime-local');
+  var end=field('pend','پایان کمپین (زمان UTC با فرمت ISO)',cfg.campaign_end?new Date(cfg.campaign_end).toISOString():'','text');
   var rows=cfg.plans.map(function(p,i){return el('section',{class:'port-add stack'},[
    h('h3',p.name),
    el('div',{class:'grid grid--2'},[
@@ -687,7 +687,7 @@ function marketerPricingCard(){
   ])});
   var save=el('button',{class:'btn btn--primary',type:'button',text:'ذخیره تعرفه‌های بازاریاب',onclick:act(function(){
    var plans=cfg.plans.map(function(p,i){return {id:p.id,name:$('#pname'+i).value,base:Number($('#pbase'+i).value),promo:$('#ppromo'+i).value===''?null:Number($('#ppromo'+i).value),gift:$('#pgift'+i).value===''?null:Number($('#pgift'+i).value),features:$('#pfeatures'+i).value.split('\n').map(function(x){return x.trim()}).filter(Boolean)}});
-   return api('/api/sales/admin/pricing',{campaign:$('#pcampaign').value,campaign_end:$('#pend').value?new Date($('#pend').value).getTime():null,plans:plans}).then(function(){toast('تعرفه‌ها و امکانات به‌روزرسانی شد');return load()});
+   return api('/api/sales/admin/pricing',{campaign:$('#pcampaign').value,campaign_end:$('#pend').value?Date.parse($('#pend').value):null,plans:plans}).then(function(){toast('تعرفه‌ها و امکانات به‌روزرسانی شد');return load()});
   })});
   form.replaceChildren(campaign,end,...rows,save);
  })}
