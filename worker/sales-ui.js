@@ -9,7 +9,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,x=>({'&':'&amp;','<':'&lt;','>':'&
 const n=v=>Number(v||0).toLocaleString('fa-IR');
 const fmt=v=>v?new Intl.DateTimeFormat('fa-IR',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Tehran'}).format(v):'—';
 const names={new:'جدید',visited:'ویزیت‌شده',demo:'دمو',negotiation:'مذاکره',won:'فروش',lost:'ناموفق'};
-let mine=[],stats={},selected=null;
+let mine=[],stats={},selected=null,pricing=null,customers=[],customerOffset=0,customerMore=false;
 let tmr;function toast(msg,error=false){const t=$('#toast');t.textContent=msg;t.className='toast on'+(error?' error':'');clearTimeout(tmr);tmr=setTimeout(()=>t.className='toast',4600)}
 async function api(url,body,headers={}){
  const o={credentials:'same-origin',headers};
@@ -24,17 +24,42 @@ function copy(s){navigator.clipboard?.writeText(s).then(()=>toast('لینک کپ
 function showLogin(){app.innerHTML='<div class="card stack login"><h1>ورود بازاریاب آینه</h1><p class="muted">با نام کاربری و رمز اختصاصی خودت وارد شو.</p><form class="stack" id="login">'+field('نام کاربری','username','','autocomplete="username" dir="ltr" required')+field('رمز عبور','password','','type="password" autocomplete="current-password" required')+'<button class="primary" type="submit">ورود</button></form></div>';$('#who').innerHTML='';$('#login').onsubmit=e=>{e.preventDefault();action($('#login button'),async()=>{await api('/api/sales/login',{username:value('#username'),password:$('#password').value});await begin()})}}
 async function begin(){let m=await api('/api/sales/me');if(!m.loggedIn){showLogin();return}
  $('#who').innerHTML='<span>'+esc(m.rep.name)+'</span><button id="logout">خروج</button>';$('#logout').onclick=()=>action($('#logout'),async()=>{await api('/api/sales/logout',{});await begin()});await reload()}
-async function reload(){const [a,b]=await Promise.all([api('/api/sales/salons'),api('/api/sales/dashboard')]);mine=a.salons;stats=b;home()}
+async function reload(){const [a,b,c]=await Promise.all([api('/api/sales/salons'),api('/api/sales/dashboard'),api('/api/sales/pricing')]);mine=a.salons;stats=b;pricing=c;home()}
 function home(){selected=null;app.innerHTML=head('داشبورد بازاریاب','مزون جدید بساز، وضعیت پیگیری‌ها را به‌روز کن و لینک اختصاصی را تحویل بده.')+
  '<div class="kpis">'+[['مزون‌های من',mine.length],['در مذاکره',stats.stages.negotiation||0],['فروش',stats.stages.won||0],['پیگیری معوق',stats.followups||0]].map(x=>'<div class="kpi"><small>'+x[0]+'</small><b>'+n(x[1])+'</b></div>').join('')+'</div>'+
  '<div class="grid"><section class="card stack"><div class="flex"><h2>مزون‌های من</h2><button class="gold" id="new">+ ساخت مزون</button></div><div class="list">'+(mine.map(s=>'<div class="item"><div><strong>'+esc(s.name)+'</strong><small dir="ltr">'+esc(s.slug)+'</small><span class="badge '+(s.approved?'good':'pending')+'">'+(s.approved?'تأیید شده':'در انتظار تأیید')+'</span> <span class="badge">'+esc(names[s.stage]||'جدید')+'</span>'+(s.next_followup_at?'<div class="muted">پیگیری '+fmt(s.next_followup_at)+'</div>':'')+'</div><div class="actions"><button class="open" data-slug="'+esc(s.slug)+'">جزئیات</button><a class="button" target="_blank" rel="noopener" href="/s/'+encodeURIComponent(s.slug)+'">صفحه</a></div></div>').join('')||'<p class="muted">هنوز مزونی ثبت نشده است.</p>')+'</div></section>'+
- '<section class="card stack"><h2>قیف فروش شخصی</h2>'+Object.entries(names).map(([k,v])=>'<div class="flex"><span>'+v+'</span><strong>'+n(stats.stages[k]||0)+'</strong></div>').join('')+'<p class="notice">ساخت صفحه نیاز به تأیید ندارد، ولی فعال‌سازی اعتبار و موتور تولید تصویر فقط از طریق ادمین آینه انجام می‌شود.</p></section></div>';
+ '<div class="stack"><section class="card stack"><h2>قیف فروش شخصی</h2>'+Object.entries(names).map(([k,v])=>'<div class="flex"><span>'+v+'</span><strong>'+n(stats.stages[k]||0)+'</strong></div>').join('')+'<p class="notice">صفحه جدید با اعتبار تصویری که ادمین برای حساب تو تعیین کرده بلافاصله فعال می‌شود. برای لینک ربات، تأیید جداگانه مدیر لازم است.</p></section>'+pricingCard()+'</div></div>';
  $('#new').onclick=showNew;document.querySelectorAll('.open').forEach(btn=>btn.onclick=()=>open(btn.dataset.slug))}
+
+function pricingCard(){
+ if(!pricing)return '';
+ const campaign=pricing.campaign?'<span class="badge pending">'+esc(pricing.campaign)+'</span>':'';
+ const rows=(pricing.plans||[]).map(p=>{
+  const price=n(p.price)+' تومان',before=p.discount_active?'<del class="muted" style="font-size:12px">'+n(p.base)+' تومان</del> ':'';
+  const gift=p.gift!==null?'<div class="badge good">'+n(p.gift)+' عکس هدیه</div>':'';
+  return '<div class="item" style="display:grid;align-items:start"><div class="flex"><strong>'+esc(p.name)+'</strong>'+gift+'</div><div>'+before+'<strong style="font-size:22px">'+price+'</strong></div><div class="muted" style="font-size:12px">'+(p.features||[]).map(f=>'✓ '+esc(f)).join('<div></div>')+'</div></div>';
+ });
+ return '<section class="card stack"><div class="flex"><h2>پلن‌ها و تعرفه رسمی</h2>'+campaign+'</div><p class="muted">فقط جهت پرزنت به مزون؛ تعیین و تغییر قیمت تنها از پنل ادمین امکان‌پذیر است.</p>'+rows.join('')+'</section>';
+}
+async function loadCustomers(reset){
+ if(!selected)return;
+ const slug=selected.salon.slug;
+ if(reset){customerOffset=0;customers=[];customerMore=false}
+ const q=value('#customer-search');
+ const r=await api('/api/sales/salons/customers?slug='+encodeURIComponent(slug)+'&offset='+customerOffset+'&q='+encodeURIComponent(q));
+ if(!selected||selected.salon.slug!==slug)return;
+ customers=customers.concat(r.customers);customerOffset=r.offset;customerMore=r.more;
+ const target=$('#customers-list');if(!target)return;
+ const status={new:'جدید',called:'تماس گرفته شد',booked:'رزرو',not_possible:'عدم امکان',closed:'بسته شده'};
+ target.innerHTML=customers.map(x=>'<div class="item" style="display:block"><div class="flex"><strong>'+esc(x.name)+'</strong><span class="badge">'+esc(status[x.salon_status]||x.salon_status||'درخواست')+'</span></div><div class="flex"><a href="tel:'+esc(x.phone)+'" dir="ltr">'+esc(x.phone)+'</a><small>'+esc(fmt(x.created_at))+'</small></div><p class="muted">'+esc(x.look||'')+' · '+esc(x.intent==='want'?'علاقه‌مند به لباس':'درخواست پرو')+(x.staff?' · '+esc(x.staff):'')+'</p>'+(x.visit_note?'<p class="muted">'+esc(x.visit_note)+'</p>':'')+(x.note?'<p class="muted">'+esc(x.note)+'</p>':'')+(x.telegram?'<small>@'+esc(x.telegram)+'</small>':'')+'</div>').join('')||'<p class="muted">درخواستی برای این مزون پیدا نشد.</p>';
+ $('#customers-more').hidden=!customerMore;
+}
+
 function showNew(){app.innerHTML=head('ساخت صفحه مزون','اطلاعات پایه را حین ویزیت وارد کن؛ تصاویر و یادداشت‌های بعدی را هم می‌توانی اضافه کنی.')+
  '<section class="card stack"><div class="flex"><h2>مزون تازه</h2><button id="back">بازگشت</button></div><form id="create" class="stack"><div class="grid">'+field('نام مزون *','new-name','','required maxlength="100"')+field('شناسه انگلیسی *','new-slug','','required dir="ltr" pattern="[a-z][a-z0-9-]{2,45}" placeholder="royal-mezon"')+field('مخاطب یا مدیر','new-contact')+field('شماره مخاطب','new-phone','','dir="ltr"')+field('شهر','new-city')+field('آدرس','new-address')+field('اینستاگرام','new-ig','','dir="ltr" placeholder="https://instagram.com/..."')+field('ساعت کار','new-hours')+'</div><div class="preview" id="preview">/s/...</div><button class="primary" type="submit">ساخت صفحه</button></form></section>';
  $('#back').onclick=home;$('#new-slug').oninput=e=>{e.target.value=e.target.value.toLowerCase().replace(/[\s_]+/g,'-').replace(/[^a-z0-9-]/g,'').replace(/-+/g,'-');$('#preview').textContent=location.origin+'/s/'+e.target.value};
  $('#create').onsubmit=e=>{e.preventDefault();action($('#create button[type=submit]'),async()=>{const r=await api('/api/sales/salons/create',{name:value('#new-name'),slug:value('#new-slug'),contact_name:value('#new-contact'),contact_phone:value('#new-phone'),profile:{city:value('#new-city'),address:value('#new-address'),instagram:value('#new-ig'),hours:value('#new-hours')}});toast('مزون ساخته شد');await open(r.slug)})}}
-async function open(slug){try{selected=await api('/api/sales/salons/'+encodeURIComponent(slug));detail()}catch(e){toast(e.message,true)}}
+async function open(slug){try{selected=await api('/api/sales/salons/'+encodeURIComponent(slug));detail();await loadCustomers(true)}catch(e){toast(e.message,true)}}
 function detail(){const s=selected.salon,p=s.profile||{},url=selected.url,met=selected.metrics||{};app.innerHTML=head(s.name,'ویرایش صفحه اختصاصی و ثبت نتیجه مراجعه حضوری')+
  '<div class="kpis">'+[['بازدیدکننده ۳۰ روز',met.visitors],['پرو موفق ۳۰ روز',met.tryons],['درخواست مشتری ۳۰ روز',met.requests],['تکمیل صفحه',String(met.profile_done||0)+' از '+String(met.profile_total||6)]].map(x=>'<div class="kpi"><small>'+x[0]+'</small><b>'+esc(x[1]||0)+'</b></div>').join('')+'</div>'+
  '<div class="flex"><button id="back">بازگشت</button><span class="badge '+(s.approved?'good':'pending')+'">'+(s.approved?'تأیید شده':'در انتظار تأیید ادمین')+'</span></div><div style="height:14px"></div><div class="grid"><div class="stack"><section class="card stack"><h2>مشخصات عمومی مزون</h2><div class="grid">'+
@@ -43,8 +68,8 @@ function detail(){const s=selected.salon,p=s.profile||{},url=selected.url,met=se
  '<div class="list">'+selected.portfolio.map(x=>'<div class="item"><strong>'+esc(x.title)+'</strong><small>'+fmt(x.created_at)+'</small></div>').join('')+'</div></section></div>'+
  '<div class="stack"><section class="card stack"><h2>گزارش و پیگیری فروش</h2><div class="grid">'+field('نام مسئول خرید','e-contact',s.contact_name)+field('شماره خصوصی مسئول خرید','e-contact-phone',s.contact_phone,'dir="ltr"')+'</div><label>مرحله فروش<select id="stage">'+Object.entries(names).map(([k,v])=>'<option value="'+k+'" '+(s.stage===k?'selected':'')+'>'+v+'</option>').join('')+'</select></label><label>زمان پیگیری بعدی<input id="follow" type="datetime-local"></label><label>یادداشت جلسه<textarea id="e-note" maxlength="2000">'+esc(s.note)+'</textarea></label><button id="save-sales" class="primary">ثبت پیگیری</button></section>'+
  '<section class="card stack"><h2>لینک اختصاصی و QR</h2><div class="preview">'+esc(url)+'</div><div id="qr" class="qr"></div><div class="actions"><button id="copy" class="gold">کپی لینک</button><a class="button" target="_blank" rel="noopener" href="'+esc(url)+'">نمایش صفحه</a><button id="print">چاپ QR</button></div></section>'+
- '<section class="card stack"><h2>اتصال ربات مزون</h2><p class="muted">پس از تأیید مزون توسط ادمین، لینک اتصال یک‌بارمصرف ربات را به خود مدیر مزون بده.</p><button id="bot" '+(!s.approved?'disabled':'')+'>ساخت لینک ربات</button><div class="preview" id="bot-result" hidden></div></section></div></div>';
- $('#back').onclick=reload;$('#copy').onclick=()=>copy(url);
+ '<section class="card stack"><h2>مشتریان همین مزون (فقط مشاهده)</h2><p class="muted">شماره، نام و وضعیت درخواست‌های این مزون. امکان ویرایش، حذف یا خروجی انبوه وجود ندارد.</p><div class="flex"><input id="customer-search" placeholder="جست‌وجوی نام یا شماره" aria-label="جست‌وجوی مشتری" style="flex:1;min-width:170px"><button id="customer-go">جست‌وجو</button></div><div id="customers-list" class="list"></div><button id="customers-more" hidden>نمایش درخواست‌های بیشتر</button></section>'+pricingCard()+'<section class="card stack"><h2>اتصال ربات مزون</h2><p class="muted">پس از تأیید ادمین برای اتصال ربات، لینک یک‌بارمصرف را به خود مدیر مزون بده.</p><button id="bot" '+(!s.bot_link_approved?'disabled':'')+'>ساخت لینک ربات</button><div class="preview" id="bot-result" hidden></div></section></div></div>';
+ $('#back').onclick=reload;$('#copy').onclick=()=>copy(url);$('#customer-go').onclick=()=>action($('#customer-go'),()=>loadCustomers(true));$('#customers-more').onclick=()=>action($('#customers-more'),()=>loadCustomers(false));$('#customer-search').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#customer-go').click()}};
  if(s.next_followup_at){const d=new Date(s.next_followup_at);$('#follow').value=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)}
  try{let q=qrcode(0,'M');q.addData(url);q.make();$('#qr').innerHTML=q.createSvgTag({cellSize:5,margin:2,scalable:true})}catch{$('#qr').textContent=url}
  $('#print').onclick=()=>{const w=window.open('','_blank');if(w){w.document.write('<html><meta charset=utf-8><body style="text-align:center;padding:30px">'+$('#qr').innerHTML+'<p>'+esc(url)+'</p></body></html>');w.document.close();w.print()}};
