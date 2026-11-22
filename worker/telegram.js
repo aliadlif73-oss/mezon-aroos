@@ -238,7 +238,24 @@ async function onStart(ctx,arg){
  if(/^c_[a-z0-9-]{1,62}$/.test(arg)){await customerStart(ctx,arg.slice(2));return}
  if(/^o_[a-f0-9]{24}$/.test(arg)){if(await linkOwner(db,p,ctx.chat,arg.slice(2)))await ctx.say(ownerHelp,{parse_mode:'HTML'});else await ctx.say('این لینک گزارش منقضی یا قبلاً استفاده شده است. از صفحهٔ ادمین لینک تازه بسازید.');return}
  await clearOnb(db,p,ctx.chat);
- // Plain /start always shows the platform welcome; linked chats and the owner get an extra panel button.
+ const actor=await actorByChat(db,p,ctx.chat);
+ if(actor&&botOnly(env)){
+  ctx.salon=actor.salon;ctx.staff=actor.staff||null;ctx.role=actor.role;
+  // /start is an explicit fresh start for the salon's dress-registration wizard.
+  // Discard only the unfinished draft. Never delete a published dress.
+  const state=parse((await one(db,'SELECT bot_state FROM salons WHERE id=?',actor.salon.id))?.bot_state);
+  if(state.dressUpload){
+   if(state.chat!==ctx.chat||state.p!==p){await ctx.say('ثبت لباس دیگری توسط یکی از اعضای مزون در جریان است. ابتدا همان عضو باید ثبت را پایان دهد یا لغو کند.');return}
+   if(state.dressUpload.id){
+    await run(db,'DELETE FROM portfolio_imgs WHERE portfolio_id=? AND EXISTS(SELECT 1 FROM portfolio WHERE id=? AND salon_id=? AND published=0)',state.dressUpload.id,state.dressUpload.id,actor.salon.id);
+    await run(db,'DELETE FROM portfolio WHERE id=? AND salon_id=? AND published=0',state.dressUpload.id,actor.salon.id);
+   }
+  }
+  await run(db,"UPDATE salons SET bot_state='' WHERE id=?",actor.salon.id);
+  await beginDress(ctx);
+  return;
+ }
+ // Unlinked visitors receive the platform introduction, but linked owners never receive promo videos.
  await sendWelcome(ctx,{panel:await hasPanel(ctx),force:false});
 }
 const hasPanel=async ctx=>!!(await actorByChat(ctx.db,ctx.p,ctx.chat))||(ctx.owner??await isOwnerChat(ctx.db,ctx.p,ctx.chat).catch(()=>false));
