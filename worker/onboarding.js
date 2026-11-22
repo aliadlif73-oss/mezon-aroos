@@ -106,8 +106,13 @@ export async function sendWelcome(ctx,{panel=false,force=false}={}){
  let queued=false;
  await typing(ctx);
  await sendSafe(ctx,WELCOME_TEXT,{parse_mode:'HTML',reply_markup:mainKeyboard(ctx.origin,panel,ctx.env?.SALON_MANAGEMENT_MODE!=='legacy')});
- // Rows for panel chats use kind 'introf': processDue does not skip them as "already a salon chat".
- try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:panel||force?'introf':'intro',force:force||!!ctx.owner})}catch(e){console.error('schedule intro',e?.message)}
+ // Promotional videos belong only to unlinked visitors, never to salon managers or staff.
+ // Remove any video queued before this chat became a linked manager chat.
+ if(panel){
+  await run(ctx.db,"UPDATE promo_queue SET status='skipped',error='linked salon chat',updated_at=? WHERE platform=? AND chat_id=? AND status='pending'",Date.now(),ctx.p,String(ctx.chat)).catch(()=>{});
+ }else{
+  try{queued=await scheduleIntro(ctx.db,ctx.p,ctx.chat,Date.now(),{kind:'intro',force})}catch(e){console.error('schedule intro',e?.message)}
+ }
  // Primary path: keep this request's isolate alive and send when due. The queue row is the fallback; processDue claims rows atomically, so the video can never go twice.
  if(queued&&ctx.wait)ctx.wait(timing.sleep(VIDEO_DELAY+500).then(()=>processDue(ctx.env,{origin:ctx.origin,limit:5})).catch(()=>{}));
 }
@@ -260,8 +265,8 @@ export async function processDue(env,{origin='',limit=5}={}){
    try{
     const P=PLATFORMS[r.platform];
     if(!P||!platformReady(env,r.platform)){await finish('skipped','platform not configured');continue}
-    // A chat that signed in as a manager in the meantime does not need the sales video.
-    if(r.kind==='intro'&&await one(db,'SELECT 1 AS x FROM salons WHERE '+P.col+'=? UNION SELECT 1 FROM team WHERE '+P.col+'=? AND active=1',r.chat_id,r.chat_id)){await finish('skipped','already a salon chat');continue}
+    // Even older forced promo rows must not reach a linked salon or staff account.
+    if(await one(db,'SELECT 1 AS x FROM salons WHERE '+P.col+'=? UNION SELECT 1 FROM team WHERE '+P.col+'=? AND active=1',r.chat_id,r.chat_id)){await finish('skipped','already a salon chat');continue}
     try{await sendIntro(env,r.platform,r.chat_id,origin);await finish('sent');sent++}
     catch(e){
      const msg=String(e?.message||e);
