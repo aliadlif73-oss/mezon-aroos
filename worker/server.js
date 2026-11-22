@@ -3,7 +3,7 @@ import {processDue,onbCleanup} from './onboarding.js';
 import {identity,issueCookie,clearCookie,same,passwordLoginEnabled} from './auth.js';
 import {bucketFor,putImage,putVideo,maxUpload} from './storage.js';
 import {precheck,PHOTO_RULES} from './precheck.js';
-import {mobilesIn,customerLinks,applyLeadStatus,botReady,deliverLead,deliverPending,newLinkCode,setWebhook,inboxes,followLinks,PLATFORMS,platformReady,baleSecret,staffInvite,notifyConflict,expireStates} from './telegram.js';
+import {mobilesIn,customerLinks,applyLeadStatus,botReady,deliverLead,deliverPending,newLinkCode,setWebhook,inboxes,followLinks,PLATFORMS,platformReady,baleSecret,staffInvite,notifyConflict,expireStates},call as botApiCall} from './telegram.js';
 import {createPairing,pairStatus} from './pairing.js';
 import {normalizeDressSizes,DRESS_SIZES} from './dress-sizes.js';
 import {BACKGROUNDS,bgOf} from './backgrounds.js';
@@ -208,6 +208,23 @@ async function uploadProvider(env,m){const object=await bucketFor(env).get(m.obj
 
 export async function api(req,env){const u=new URL(req.url),path=u.pathname;must(env.DB,'پایگاه داده هنوز آماده نیست',503);const db=env.DB;
  if(req.method!=='GET'){must(req.headers.get('origin')===u.origin,'درخواست از این نشانی مجاز نیست',403);must(Number(req.headers.get('content-length')||0)<12000000,'حجم درخواست زیاد است',413);}
+ if(path==='/api/owner/bot-health'&&req.method==='GET'){
+  await owner(req,env);
+  const origin=(env.APP_ORIGIN||u.origin).replace(/\\/$/,'');
+  const expected=origin+'/api/telegram/webhook';
+  const telegram={token_configured:!!env.TELEGRAM_BOT_TOKEN,webhook_secret_configured:!!env.TELEGRAM_WEBHOOK_SECRET,expected_url:expected,connected:false};
+  if(telegram.token_configured){
+   try{
+    const info=await botApiCall(env,'telegram','getWebhookInfo',{});
+    telegram.connected=info.url===expected&&telegram.webhook_secret_configured;
+    telegram.registered_url=info.url||'';
+    telegram.pending_updates=Number(info.pending_update_count||0);
+    telegram.last_error_at=info.last_error_date?new Date(info.last_error_date*1000).toISOString():null;
+    telegram.last_error=String(info.last_error_message||'').slice(0,250);
+   }catch(err){telegram.error='امکان دریافت وضعیت از تلگرام وجود ندارد: '+String(err?.message||'').slice(0,120)}
+  }
+  return J({telegram,bale:{token_configured:!!env.BALE_BOT_TOKEN,secret_configured:!!baleSecret(env),status:'not_verified'},checked_at:new Date().toISOString()});
+ }
  if(path==='/api/inquiry'&&req.method==='POST'){
   await limited(db,'inquiry:'+clientIp(req),5,'درخواست‌های زیادی فرستاده‌ای؛ کمی بعد دوباره امتحان کن');
   const b=await req.json().catch(()=>({}));
