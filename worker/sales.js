@@ -13,6 +13,42 @@ const exec=(db,sql,...args)=>db.prepare(sql).bind(...args).run();
 const many=async(db,sql,...args)=>(await db.prepare(sql).bind(...args).all()).results;
 const clean=(v,n)=>text(String(v??''),n);
 const allowedStages=['new','visited','demo','negotiation','won','lost'];
+const DEFAULT_PLANS={
+ campaign:'بلک فرایدی',campaign_end:Date.parse('2026-11-24T20:29:59Z'),
+ plans:[
+  {id:'one',name:'پلن ۱ ماهه',base:25000000,promo:15000000,gift:null,features:['دسترسی به آینه','صفحه اختصاصی مزون','ثبت و مدیریت مدل‌های لباس','پرو مجازی روی عکس مشتری','پشتیبانی آنلاین','آموزش اولیه']},
+  {id:'three',name:'پلن ۳ ماهه',base:60000000,promo:30000000,gift:100,features:['تمام امکانات پلن ۱ ماهه','پشتیبانی سه‌ماهه','مدیریت نمونه‌کار و سایزبندی','آموزش راه‌اندازی']},
+  {id:'six',name:'پلن ۶ ماهه',base:80000000,promo:40000000,gift:200,features:['تمام امکانات پلن ۳ ماهه','پشتیبانی اولویت‌دار','گزارش استفاده ماهانه','امکان شخصی‌سازی برند مزون','آموزش تکمیلی تیم مزون']}
+ ]
+};
+async function priceConfig(db){
+ const row=await first(db,'SELECT value FROM app_settings WHERE key=?','sales_plans');
+ return row?parse(row.value):DEFAULT_PLANS;
+}
+function displayPricing(data){
+ const now=Date.now(),campaignActive=Boolean(data.campaign)&&Number(data.campaign_end)>now;
+ return {campaign:campaignActive?data.campaign:'',campaign_end:campaignActive?data.campaign_end:null,plans:data.plans.map(p=>({...p,price:campaignActive&&p.promo!==null?p.promo:p.base,discount_active:campaignActive&&p.promo!==null}))};
+}
+function validatePricing(b){
+ must(b&&Array.isArray(b.plans)&&b.plans.length===3,'سه پلن قیمت‌گذاری لازم است');
+ const ids=['one','three','six'],plans=b.plans.map((p,i)=>{
+  must(p.id===ids[i],'شناسه و ترتیب پلن نادرست است');
+  const name=clean(p.name,65);
+  const base=Number(p.base),promo=p.promo===null||p.promo===''?null:Number(p.promo);
+  const gift=p.gift===null||p.gift===''?null:Number(p.gift);
+  must(name.length>=3&&Number.isInteger(base)&&base>0&&base<=1000000000,'قیمت پایه معتبر نیست');
+  must(promo===null||(Number.isInteger(promo)&&promo>0&&promo<=base),'قیمت کمپین معتبر نیست');
+  must(gift===null||(Number.isInteger(gift)&&gift>=0&&gift<=100000),'تعداد عکس هدیه معتبر نیست');
+  must(Array.isArray(p.features)&&p.features.length>0&&p.features.length<=12,'حداقل یک و حداکثر ۱۲ ویژگی برای هر پلن');
+  const features=p.features.map(f=>clean(f,110)).filter(Boolean);
+  must(features.length>0,'ویژگی پلن خالی است');
+  return {id:p.id,name,base,promo,gift,features};
+ });
+ const campaign=clean(b.campaign||'',60);
+ const end=b.campaign_end===null||b.campaign_end===''?null:Number(b.campaign_end);
+ must(end===null||(Number.isInteger(end)&&end>0&&end<4102444800000),'زمان پایان کمپین معتبر نیست');
+ return {campaign,campaign_end:end,plans};
+}
 const salt=()=>Array.from(crypto.getRandomValues(new Uint8Array(16)),b=>b.toString(16).padStart(2,'0')).join('');
 const bytes=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
 async function passHash(password,s){
@@ -52,11 +88,11 @@ function updatedProfile(old,input){
 }
 const parse=s=>{try{return JSON.parse(s||'{}')}catch{return {}}};
 async function ownSalon(db,rep,slug){
- const row=await first(db,'SELECT s.*,ms.stage,ms.contact_name,ms.contact_phone,ms.note,ms.next_followup_at,ms.updated_at AS sales_updated_at FROM marketer_salons ms JOIN salons s ON s.id=ms.salon_id WHERE ms.marketer_id=? AND s.slug=?',rep.id,slug);
+ const row=await first(db,'SELECT s.*,ms.stage,ms.bot_link_approved,ms.contact_name,ms.contact_phone,ms.note,ms.next_followup_at,ms.updated_at AS sales_updated_at FROM marketer_salons ms JOIN salons s ON s.id=ms.salon_id WHERE ms.marketer_id=? AND s.slug=?',rep.id,slug);
  must(row,'این مزون در فهرست شما نیست',404);
  return row;
 }
-const showSalon=s=>({id:s.id,slug:s.slug,name:s.name,profile:parse(s.profile),stage:s.stage,approved:!!s.approved,contact_name:s.contact_name,contact_phone:s.contact_phone,note:s.note,next_followup_at:s.next_followup_at,updated_at:s.sales_updated_at,created_at:s.created_at,telegram:!!s.telegram_chat_id,bale:!!s.bale_chat_id});
+const showSalon=s=>({id:s.id,slug:s.slug,name:s.name,profile:parse(s.profile),stage:s.stage,approved:!!s.approved,bot_link_approved:!!s.bot_link_approved,contact_name:s.contact_name,contact_phone:s.contact_phone,note:s.note,next_followup_at:s.next_followup_at,updated_at:s.sales_updated_at,created_at:s.created_at,telegram:!!s.telegram_chat_id,bale:!!s.bale_chat_id});
 const links=(env,slug)=>(env.APP_ORIGIN||'https://ayneh-mezon.site')+'/s/'+slug;
 
 export async function salesApi(req,env){
@@ -70,7 +106,7 @@ export async function salesApi(req,env){
  const body=async()=>req.json().catch(()=>({}));
  if(p==='/api/sales/admin'&&req.method==='GET'){
   await owner(req,env);
-  return J({users:await many(db,'SELECT m.id,m.name,m.username,m.active,m.created_at,m.updated_at,COUNT(ms.salon_id) AS salons, SUM(CASE WHEN ms.stage=\'won\' THEN 1 ELSE 0 END) AS won, SUM(CASE WHEN ms.stage=\'demo\' THEN 1 ELSE 0 END) AS demos, SUM(CASE WHEN ms.stage=\'negotiation\' THEN 1 ELSE 0 END) AS negotiating FROM marketers m LEFT JOIN marketer_salons ms ON ms.marketer_id=m.id GROUP BY m.id ORDER BY m.created_at DESC')});
+  return J({users:await many(db,'SELECT m.id,m.name,m.username,m.active,m.created_at,m.updated_at,m.initial_credits,COUNT(ms.salon_id) AS salons, SUM(CASE WHEN ms.stage=\'won\' THEN 1 ELSE 0 END) AS won, SUM(CASE WHEN ms.stage=\'demo\' THEN 1 ELSE 0 END) AS demos, SUM(CASE WHEN ms.stage=\'negotiation\' THEN 1 ELSE 0 END) AS negotiating FROM marketers m LEFT JOIN marketer_salons ms ON ms.marketer_id=m.id GROUP BY m.id ORDER BY m.created_at DESC')});
  }
  if(p==='/api/sales/admin/create'&&post){
   await owner(req,env);
@@ -82,7 +118,35 @@ export async function salesApi(req,env){
   must(password.length>=12&&password.length<=128,'رمز حداقل ۱۲ نویسه است');
   const id=uid(),s=salt(),now=Date.now();
   await exec(db,'INSERT INTO marketers(id,name,username,password_salt,password_hash,active,created_at,updated_at) VALUES(?,?,?,?,?,1,?,?)',id,name,username,s,await passHash(password,s),now,now);
-  return J({ok:true,id,username,password}); // Shown only once after creation, never persisted as plaintext.
+  return J({ok:true,id,username,password,initial_credits:10}); // Shown only once after creation, never persisted as plaintext.
+ }
+ if(p==='/api/sales/admin/credits'&&post){
+  await owner(req,env);
+  const b=await body(),id=String(b.id||''),credits=Number(b.initial_credits);
+  must(Number.isInteger(credits)&&credits>=1&&credits<=500,'اعتبار اولیه باید بین ۱ تا ۵۰۰ تصویر باشد');
+  const exists=await first(db,'SELECT id FROM marketers WHERE id=?',id);
+  must(exists,'بازاریاب پیدا نشد',404);
+  await exec(db,'UPDATE marketers SET initial_credits=?,updated_at=? WHERE id=?',credits,Date.now(),id);
+  return J({ok:true,initial_credits:credits});
+ }
+ if(p==='/api/sales/admin/pending-bots'&&req.method==='GET'){
+  await owner(req,env);
+  return J({salons:await many(db,"SELECT s.slug,s.name,s.approved,s.telegram_chat_id IS NOT NULL AS telegram,s.bale_chat_id IS NOT NULL AS bale,ms.bot_link_approved,m.name AS marketer FROM marketer_salons ms JOIN salons s ON s.id=ms.salon_id JOIN marketers m ON m.id=ms.marketer_id ORDER BY ms.bot_link_approved ASC,ms.created_at DESC LIMIT 300")});
+ }
+ if(p==='/api/sales/admin/bot-approve'&&post){
+  await owner(req,env);
+  const b=await body(),slug=String(b.slug||''),approved=b.approved===true?1:0;
+  const row=await first(db,'SELECT ms.salon_id FROM marketer_salons ms JOIN salons s ON s.id=ms.salon_id WHERE s.slug=?',slug);
+  must(row,'مزون بازاریابی پیدا نشد',404);
+  await exec(db,'UPDATE marketer_salons SET bot_link_approved=?,updated_at=? WHERE salon_id=?',approved,Date.now(),row.salon_id);
+  return J({ok:true,approved:!!approved});
+ }
+ if(p==='/api/sales/admin/pricing'){
+  await owner(req,env);
+  if(req.method==='GET')return J({pricing:await priceConfig(db)});
+  const cfg=validatePricing(await body());
+  await exec(db,'INSERT INTO app_settings(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at','sales_plans',JSON.stringify(cfg),Date.now());
+  return J({ok:true,pricing:cfg});
  }
  if(p==='/api/sales/admin/status'&&post){
   await owner(req,env);const b=await body();
@@ -126,13 +190,16 @@ export async function salesApi(req,env){
   return J({loggedIn:!!rep,rep:rep||null});
  }
  const rep=await requireActor(req,env);
+ if(p==='/api/sales/pricing'&&req.method==='GET'){
+  return J(displayPricing(await priceConfig(db)));
+ }
  if(p==='/api/sales/dashboard'&&req.method==='GET'){
   const rows=await many(db,'SELECT ms.stage,COUNT(*) AS n FROM marketer_salons ms WHERE ms.marketer_id=? GROUP BY ms.stage',rep.id);
   const overdue=await first(db,"SELECT COUNT(*) AS n FROM marketer_salons WHERE marketer_id=? AND next_followup_at IS NOT NULL AND next_followup_at<? AND stage NOT IN ('won','lost')",rep.id,Date.now());
   return J({stages:Object.fromEntries(rows.map(r=>[r.stage,Number(r.n)])),followups:Number(overdue?.n||0)});
  }
  if(p==='/api/sales/salons'&&req.method==='GET'){
-  const rows=await many(db,'SELECT s.id,s.slug,s.name,s.profile,s.approved,s.created_at,s.telegram_chat_id,s.bale_chat_id,ms.stage,ms.contact_name,ms.contact_phone,ms.note,ms.next_followup_at,ms.updated_at AS sales_updated_at FROM marketer_salons ms JOIN salons s ON ms.salon_id=s.id WHERE ms.marketer_id=? ORDER BY ms.updated_at DESC LIMIT 200',rep.id);
+  const rows=await many(db,'SELECT s.id,s.slug,s.name,s.profile,s.approved,s.created_at,s.telegram_chat_id,s.bale_chat_id,ms.stage,ms.bot_link_approved,ms.contact_name,ms.contact_phone,ms.note,ms.next_followup_at,ms.updated_at AS sales_updated_at FROM marketer_salons ms JOIN salons s ON ms.salon_id=s.id WHERE ms.marketer_id=? ORDER BY ms.updated_at DESC LIMIT 200',rep.id);
   return J({salons:rows.map(showSalon)});
  }
  if(p==='/api/sales/salons/create'&&post){
@@ -141,13 +208,16 @@ export async function salesApi(req,env){
   must(name.length>=2,'نام مزون را وارد کنید');
   must(!await first(db,'SELECT 1 FROM salons WHERE slug=?',slug),'این شناسه قبلاً ثبت شده است',409);
   const id=uid(),now=Date.now(),profile=updatedProfile({},b.profile||{});
+  const initial=Number((await first(db,'SELECT initial_credits FROM marketers WHERE id=?',rep.id))?.initial_credits);
+  must(Number.isInteger(initial)&&initial>=1&&initial<=500,'اعتبار اولیه بازاریاب معتبر نیست',403);
   const contact=clean(b.contact_name||'',90),contactPhone=normalizePhone(b.contact_phone);
-  const settings={generation_enabled:false,reference_verified:true,catalog:false,allow_own_dress:false};
+  const settings={generation_enabled:true,reference_verified:true,catalog:false,allow_own_dress:false,daily_limit:initial,quota_per_line:4};
   await db.batch([
-   db.prepare("INSERT INTO salons(id,slug,owner_id,name,profile,settings,created_at,approved,credit_limit,manage_token) VALUES(?,?,?,?,?,?,?,0,0,NULL)").bind(id,slug,'sales:'+rep.id,name,JSON.stringify(profile),JSON.stringify(settings),now),
-   db.prepare("INSERT INTO marketer_salons(salon_id,marketer_id,stage,contact_name,contact_phone,created_at,updated_at) VALUES(?,?, 'new',?,?,?,?)").bind(id,rep.id,contact,contactPhone,now,now)
+   db.prepare("INSERT INTO salons(id,slug,owner_id,name,profile,settings,created_at,approved,credit_limit,manage_token) VALUES(?,?,?,?,?,?,?,1,?,NULL)").bind(id,slug,'sales:'+rep.id,name,JSON.stringify(profile),JSON.stringify(settings),now,initial),
+   db.prepare("INSERT INTO marketer_salons(salon_id,marketer_id,stage,contact_name,contact_phone,created_at,updated_at) VALUES(?,?, 'new',?,?,?,?)").bind(id,rep.id,contact,contactPhone,now,now),
+   db.prepare('INSERT INTO credit_ledger(id,salon_id,amount,method,ref,by_who,limit_after,created_at) VALUES(?,?,?,?,?,?,?,?)').bind(uid(),id,initial,'opening','field-sales',rep.username,initial,now)
   ]);
-  return J({ok:true,slug,url:links(env,slug),status:'pending'});
+  return J({ok:true,slug,url:links(env,slug),status:'active',credits:initial,bot_link_approved:false});
  }
  const view=p.match(/^\/api\/sales\/salons\/([a-z0-9-]{3,46})$/);
  if(view&&req.method==='GET'){
@@ -163,6 +233,15 @@ export async function salesApi(req,env){
   const pf=parse(salon.profile),needed=['logo','cover','address','phone','instagram','city'];
   const metrics={visitors:Number(v?.n||0),tryons:Number(g?.n||0),requests:Number(l?.n||0),dresses:portfolio.length,profile_done:needed.filter(k=>!!pf[k]).length,profile_total:needed.length};
   return J({salon:showSalon(salon),portfolio,metrics,url:links(env,salon.slug)});
+ }
+ if(p==='/api/sales/salons/customers'&&req.method==='GET'){
+  const salon=await ownSalon(db,rep,String(u.searchParams.get('slug')||''));
+  const offset=Math.min(10000,Math.max(0,Number(u.searchParams.get('offset'))||0));
+  const q=String(u.searchParams.get('q')||'').trim().slice(0,80).replace(/[\\%_]/g,'');
+  const filter=q?' AND (l.name LIKE ? OR l.phone LIKE ? OR l.look LIKE ?)':'';
+  const args=q?[salon.id,'%'+q+'%','%'+q+'%','%'+q+'%']:[salon.id];
+  const rows=await many(db,"SELECT l.id,l.name,l.phone,l.telegram,l.look,l.intent,l.note,l.visit_note,l.salon_status,l.status,l.created_at,t.name AS staff FROM leads l LEFT JOIN team t ON t.id=l.staff_id WHERE l.salon_id=?"+filter+' ORDER BY l.created_at DESC,l.id DESC LIMIT 51 OFFSET ?',...args,offset);
+  return J({customers:rows.slice(0,50),more:rows.length>50,offset:offset+50,slug:salon.slug});
  }
  if(p==='/api/sales/salons/update'&&post){
   const b=await body(),salon=await ownSalon(db,rep,String(b.slug||'')),name=b.name===undefined?salon.name:clean(b.name,100);
@@ -206,7 +285,7 @@ export async function salesApi(req,env){
  }
  if(p==='/api/sales/salons/bot-link'&&post){
   const b=await body(),salon=await ownSalon(db,rep,String(b.slug||''));
-  must(salon.approved===1,'فعال‌سازی مزون باید اول توسط ادمین تأیید شود',403);
+  must(salon.approved===1&&salon.bot_link_approved===1,'برای ساخت لینک ربات، تأیید ادمین آینه لازم است',403);
   must(!salon.telegram_chat_id&&!salon.bale_chat_id,'ربات این مزون از قبل وصل است؛ تغییر مدیر فقط با ادمین انجام می‌شود',403);
   return J(await newLinkCode(db,salon,env));
  }
