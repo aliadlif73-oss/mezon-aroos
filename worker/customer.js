@@ -1,4 +1,5 @@
 import {DRESS_STYLES,LINE_FILTERS,LINE_PHOTO,LINE_LABEL} from './lines.js';
+import {SIZE_OPTIONS} from './dress-sizes.js';
 import {QR_JS} from './qr.js';
 import {PHOTO_CHECK_JS} from './pairing.js';
 import {SCENE_JS} from './scene.js';
@@ -207,6 +208,15 @@ a.hchip,button.hchip{cursor:pointer}a.hchip:hover,button.hchip:hover{border-colo
 .stage__empty svg{width:96px;height:auto;display:block;margin:0 auto 6px;opacity:.9}.stage__empty{position:relative;z-index:1;color:var(--muted);font-size:13px;text-align:center;padding:24px;max-width:22ch;line-height:1.9}
 .rev__tips{margin:8px 0 0;padding:0 18px;font-size:13px;line-height:2;color:var(--muted)}
 .sizes{margin:10px 0;padding:10px 12px;border:1px solid var(--glass-2);border-radius:var(--r-lg)}.sizes summary{cursor:pointer}.sizes__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}.sizes__grid input{width:100%;text-align:center}
+.dress-size-picker{margin:12px 0;padding:14px;border:1px solid var(--glass-2);border-radius:var(--r-lg)}
+.dress-size-picker__head{font-size:14px;font-weight:750;margin-bottom:5px}
+.dress-size-picker__hint{font-size:12px;color:var(--muted);line-height:1.8;margin:0 0 10px}
+.dress-size-picker__options{display:flex;flex-wrap:wrap;gap:8px}
+.dress-size-picker__option{position:relative;cursor:pointer}
+.dress-size-picker__option input{position:absolute;opacity:0;width:1px;height:1px}
+.dress-size-picker__option span{display:flex;align-items:center;justify-content:center;min-width:46px;min-height:42px;padding:7px 11px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:650}
+.dress-size-picker__option input:checked+span{background:var(--mz-emerald);border-color:var(--mz-emerald);color:#fff}
+.dress-size-picker__option input:focus-visible+span{outline:3px solid var(--accent);outline-offset:2px}
 .upload strong.upload__say{font-family:var(--display);font-weight:800;font-size:23px;line-height:1.9;color:var(--mz-emerald);text-align:center;padding:0 14px}
 .zoomable{position:relative;width:min(100%,var(--fw-max,380px),calc((78svh - 22px) * var(--ar,.6667) + 22px));margin:18px auto 0}
 .compare-wrap{width:100%;margin:0}
@@ -647,6 +657,7 @@ const clientJS=String.raw`
 /*__CHECK__*/
 /*__SCENE__*/
 var LINES=__LINES__;
+var DRESS_SIZE_OPTIONS=__DRESS_SIZES__;
 var MARK=__MARK__;
 var SLUG=window.__SLUG||location.pathname.split('/').filter(Boolean)[1]||'';
 var ILLO=__ILLO__;
@@ -680,7 +691,7 @@ var ICO={
  down:'<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><g transform="rotate(180 12 12)"><path d="M7 10.5V20H4.2A1.2 1.2 0 0 1 3 18.8v-7.1a1.2 1.2 0 0 1 1.2-1.2H7zM7 10.5l3.4-7a2.1 2.1 0 0 1 2.1 2.2v3.6h5.1a2.1 2.1 0 0 1 2.1 2.4l-1.1 6.5A2.1 2.1 0 0 1 16.5 20H7"/></g></svg>',
  orbit:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="3.6"/><path d="M12 3.5c2 1.6 3.2 4.7 3.2 8.5s-1.2 6.9-3.2 8.5"/><path d="m18.6 13.8 2 1.6-2.3 1"/></svg>',
  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>',};
-var state={sz:{arm:'',bust:'',belly:''},ratio:'',pub:null,step:1,original:null,reference:null,refTitle:'',style:null,tab:'salon',result:null,gen:null,genState:null,busy:false,error:'',session:false,verified:false,idem:null,rating:0,me:null};
+var state={sz:{arm:'',bust:'',belly:''},dressSize:'',ratio:'',pub:null,step:1,original:null,reference:null,refTitle:'',style:null,tab:'salon',result:null,gen:null,genState:null,busy:false,error:'',session:false,verified:false,idem:null,rating:0,me:null};
 try{state.me=JSON.parse(localStorage.getItem('ayneh-me')||'null')}catch(e){}
 var $=function(s,r){return (r||document).querySelector(s)};
 var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
@@ -956,12 +967,26 @@ function sizesRow(){
  });
  wrap.append(g);return wrap;
 }
+function dressSizeRow(){
+ var wrap=el('section',{class:'dress-size-picker','aria-label':'سایز لباس من'});
+ wrap.append(el('div',{class:'dress-size-picker__head',text:'سایز لباس من (اختیاری)'}));
+ wrap.append(el('p',{class:'dress-size-picker__hint',text:'سایز معمول خودت را انتخاب کن. این گزینه جدا از اندازه‌های بدن است و اندازه‌گیری دقیق یا تأیید موجودی لباس محسوب نمی‌شود.'}));
+ var options=el('div',{class:'dress-size-picker__options',role:'radiogroup','aria-label':'انتخاب سایز لباس'});
+ [{value:'',label:'نمی‌دانم'}].concat(DRESS_SIZE_OPTIONS).forEach(function(s){
+  var radio=el('input',{type:'radio',name:'dress-size',value:s.value,'aria-label':s.label});
+  radio.checked=state.dressSize===s.value;
+  radio.addEventListener('change',function(){if(radio.checked){state.dressSize=s.value;state.idem=null}});
+  options.append(el('label',{class:'dress-size-picker__option'},[radio,el('span',{text:s.label})]));
+ });
+ wrap.append(options);return wrap;
+}
 function stepModel(){
  var box=el('div',{class:'panel flow'});
  if(state.original){
   var fresh=state.justArrived;state.justArrived=false;
   box.append(el('div',{class:'selfie'+(fresh?' selfie--fresh':'')},[el('img',{src:state.preview||media(state.original),alt:''}),el('div',{},[el('b',{html:ICO.check+'<span>'+(fresh?'عکست ثبت شد':'عکست آماده است')+'</span>'}),el('span',{text:'لباس انتخابی روی همین عکس امتحان می‌شود.'})]),el('button',{class:'btn btn--ghost btn--sm',type:'button',onclick:function(){changePhoto();go(1)},text:'تغییر'})]));
  }
+ box.append(dressSizeRow());
  box.append(sizesRow());
  if(quotaLeft()===0&&!state.tourDemo)box.append(notice('warn',quotaOut()));
  var seg=el('div',{class:'seg',role:'tablist'});
@@ -1859,7 +1884,7 @@ function generate(){
  ensureSession().then(function(){
   state.idem=state.idem||uuid();
   // The page's own note under «خودت را در لباس عروس ببین» says the photo is sent for the simulation; no extra checkbox.
-  return api('generate',{v:VISITOR,image_consent:true,sizes:sizesPayload(),idem:state.idem,ratio:state.ratio||undefined,original_id:state.original,reference_id:state.reference||undefined,style:state.reference?undefined:(state.style===null?undefined:state.style)});
+  return api('generate',{v:VISITOR,image_consent:true,sizes:sizesPayload(),dress_size:state.dressSize||undefined,idem:state.idem,ratio:state.ratio||undefined,original_id:state.original,reference_id:state.reference||undefined,style:state.reference?undefined:(state.style===null?undefined:state.style)});
  }).then(function(job){
   track('generate',state.reference?(state.refTitle?'salon':'upload'):'catalog');
   spentQuota();
@@ -2933,4 +2958,4 @@ export const customerHTML=String.raw`<!doctype html><html lang="fa" dir="rtl"><h
 <script>__JS__</script>
 </body></html>`
  .replace('__CSS__',()=>baseCSS+customerCSS+freshDemoCSS)
- .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
+ .replace('__JS__',()=>clientJS.replace('/*__QR__*/',()=>QR_JS).replace('/*__CHECK__*/',()=>PHOTO_CHECK_JS).replace('/*__SCENE__*/',()=>SCENE_JS).replace('__LINES__',()=>LINES_JSON).replace('__DRESS_SIZES__',()=>JSON.stringify(SIZE_OPTIONS)).replace('__MARK__',()=>JSON.stringify(markSVG)).replace('__ILLO__',()=>JSON.stringify(illos)).replace('__MZD__',()=>JSON.stringify(MZ_D)));
