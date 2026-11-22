@@ -3,6 +3,7 @@
 // catalogue dress). Try-ons come from the generations table, saves from events_log (save_look),
 // «می‌خواهم» requests from leads with intent='want'.
 import {DRESS_STYLES} from './lines.js';
+import {MIX_COLLECTION} from './bridal-mix.js';
 import {bucketFor} from './storage.js';
 
 const DAY=86400000;
@@ -41,7 +42,7 @@ export function dressKeyOf(g,index){
 export function dressName(key,index){
  if(key.startsWith('d:'))return DRESS_STYLES[Number(key.slice(2))]?.[0]||'لباس آماده';
  if(key.startsWith('p:'))return index?.byId.get(key.slice(2))||'لباس حذف‌شدهٔ مزون';
- if(/^m:[0-2]{4}$/.test(key))return 'طرح ترکیبی: '+key.slice(2).split('').map((n,i)=>['بالاتنه','دامن','آستین','یقه'][i]+' '+(Number(n)+1)).join('، ');
+ if(/^m:[0-2]{4}$/.test(key))return 'طرح ترکیبی: '+key.slice(2).split('').map((n,i)=>MIX_COLLECTION[['bodice','skirt','sleeves','neckline'][i]][Number(n)][0]).join(' + ');
  return 'نامشخص';
 }
 
