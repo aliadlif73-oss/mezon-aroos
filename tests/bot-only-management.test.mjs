@@ -158,3 +158,18 @@ test('size buttons apply to the same published dress and respect salon scope',as
   assert.equal(env.DB.sql.prepare('SELECT sizes FROM portfolio WHERE id=?').get(otherDress).sizes,'[]');
  }finally{bot.restore()}
 });
+
+test('owner-only bot diagnostics do not leak Telegram token and report actual webhook configuration',async()=>{
+ const env=fixture(),bot=captureBot();
+ try{
+  assert.equal((await req(env,'/api/owner/bot-health')).status,401);
+  const report=await req(env,'/api/owner/bot-health',undefined,true);
+  assert.equal(report.status,200,JSON.stringify(report));
+  assert.equal(report.data.telegram.token_configured,true);
+  assert.equal(report.data.telegram.webhook_secret_configured,true);
+  assert.equal(report.data.telegram.expected_url,origin+'/api/telegram/webhook');
+  assert.equal(report.data.telegram.connected,false,'mismatched webhook is not reported connected');
+  assert(!JSON.stringify(report.data).includes(env.TELEGRAM_BOT_TOKEN),'secret must never be returned');
+  assert(!JSON.stringify(report.data).includes(env.TELEGRAM_WEBHOOK_SECRET),'webhook secret must never be returned');
+ }finally{bot.restore()}
+});
