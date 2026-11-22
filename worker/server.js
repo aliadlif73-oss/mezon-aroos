@@ -489,7 +489,7 @@ return new Response(object.body,{headers:base});}
   }catch{await run(db,"UPDATE generations SET state='unknown' WHERE id=? OR (kind='views' AND state='creating' AND session_id=?)",id,s.id);throw new Problem(502,'ساخت تصویر با خطا روبه‌رو شد؛ لطفاً دوباره امتحان کنید');}
  }
  if(route==='spin'&&req.method==='POST'){if(!await unlimited(db,s,env)){await limited(db,'gen-ip:'+salon.id+':'+clientIp(req),15,'امروز چند تصویر از این شبکه ساخته شده؛ فردا دوباره امتحان کنید');await limited(db,'gen-salon:'+salon.id,400,'سقف ساخت تصویر امروز این مزون پر شده است؛ فردا دوباره امتحان کنید');}
-  const b=await req.json();must(cfg.video_enabled===true,'ویدیوی چرخشی فعلاً خاموش است',403);must(!demo,'چرخش ۳۶۰ در نسخهٔ نمونه نیست');must(env.KIE_API_KEY&&cfg.generation_enabled,'ساخت تصویر برای این مزون هنوز فعال نشده',503);must(/^[a-f0-9-]{36}$/.test(b.idem));
+  const b=await req.json();must(cfg.video_enabled===true,'ویدیوی چرخشی فعلاً خاموش است',403);must(!demo,'چرخش ۳۶۰ در نسخهٔ نمونه نیست');must(env.KIE_API_KEY&&cfg.generation_enabled&&(!cfg.subscription||subscriptionState(cfg).active),'ساخت تصویر برای این مزون فعال نیست یا اشتراک منقضی شده',503);must(/^[a-f0-9-]{36}$/.test(b.idem));
   const existing=await one(db,'SELECT id,state FROM generations WHERE session_id=? AND idem=?',s.id,b.idem);if(existing)return J(existing);
   const base=await one(db,"SELECT * FROM generations WHERE id=? AND session_id=? AND salon_id=? AND state='success'",b.parent,s.id,salon.id);must(base?.result_id,'عکس پایه معتبر نیست');must((base.line||'dress')==='dress','چرخش ۳۶۰ فقط برای لباس عروس است');
   const m=await ownMedia(db,s,base.result_id),id=uid(),now=Date.now();const visitor=visitorOf(b),free=await unlimited(db,s,env);
