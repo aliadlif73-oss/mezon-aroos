@@ -51,6 +51,7 @@ test('marketers only see own salons, can create draft without AI credit or owner
  assert.equal((await call(e,'/api/s/bridal-one/owner',undefined,one)).status,401);
  assert.equal((await call(e,'/api/sales/salons',undefined,two)).data.salons.length,0);
  assert.equal((await call(e,'/api/sales/salons/bridal-one',undefined,two)).status,404);
+ const own=await call(e,'/api/sales/salons/bridal-one',undefined,one);assert.equal(own.status,200,JSON.stringify(own));assert.equal(own.data.metrics.visitors,0);assert.equal(own.data.metrics.profile_total,6);
  assert.equal((await call(e,'/api/sales/salons/update',{slug:'bridal-one',note:'malicious'},two)).status,404);
  assert.equal((await call(e,'/api/sales/salons/bot-link',{slug:'bridal-one'},one)).status,403);
  const edit=await call(e,'/api/sales/salons/update',{slug:'bridal-one',profile:{address:'میدان انقلاب',phone:'02122334455'},stage:'visited',note:'جلسه خوب بود',next_followup_at:Date.now()+86400000},one);
