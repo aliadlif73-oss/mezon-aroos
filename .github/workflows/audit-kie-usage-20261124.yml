@@ -27,6 +27,9 @@ jobs:
       - name: Read-only count by boutique and day
         run: |
           npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT date(g.created_at/1000,'unixepoch') AS utc_day, COALESCE(s.slug,'unknown') AS boutique_slug, COALESCE(s.name,'unknown') AS boutique_name, g.state, COUNT(*) AS requests, SUM(CASE WHEN g.task_id IS NOT NULL THEN 1 ELSE 0 END) AS kie_tasks FROM generations g LEFT JOIN salons s ON s.id=g.salon_id WHERE g.created_at>=1795132800000 GROUP BY utc_day,boutique_slug,boutique_name,g.state ORDER BY utc_day DESC,requests DESC;"
+      - name: Read-only anonymous session and identity evidence
+        run: |
+          npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT date(g.created_at/1000,'unixepoch') AS utc_day, COALESCE(s.slug,'unknown') AS boutique_slug, COUNT(*) AS requests, COUNT(DISTINCT g.session_id) AS distinct_sessions, SUM(CASE WHEN ss.verified_phone IS NOT NULL AND ss.verified_phone<>'' THEN 1 ELSE 0 END) AS requests_with_verified_phone, SUM(CASE WHEN ss.verified_name IS NOT NULL AND ss.verified_name<>'' THEN 1 ELSE 0 END) AS requests_with_verified_name FROM generations g LEFT JOIN salons s ON s.id=g.salon_id LEFT JOIN sessions ss ON ss.id=g.session_id WHERE g.created_at>=1795132800000 GROUP BY utc_day,boutique_slug ORDER BY utc_day DESC;"
       - name: Read-only record summary without personal data
         run: |
           npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT datetime(g.created_at/1000,'unixepoch') AS utc_time, COALESCE(s.slug,'unknown') AS boutique_slug, g.kind, g.state, CASE WHEN g.task_id IS NOT NULL THEN 1 ELSE 0 END AS has_kie_task, CASE WHEN g.result_id IS NOT NULL THEN 1 ELSE 0 END AS has_result FROM generations g LEFT JOIN salons s ON s.id=g.salon_id WHERE g.created_at>=1795132800000 ORDER BY g.created_at DESC LIMIT 100;"
