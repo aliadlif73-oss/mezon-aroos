@@ -3,7 +3,7 @@
 // catalogue dress). Try-ons come from the generations table, saves from events_log (save_look),
 // «می‌خواهم» requests from leads with intent='want'.
 import {DRESS_STYLES} from './lines.js';
-import {MIX_COLLECTION} from './bridal-mix.js';
+import {MIX_COLLECTION,MIX_KEYS,validMix} from './bridal-mix.js';
 import {bucketFor} from './storage.js';
 
 const DAY=86400000;
@@ -11,7 +11,7 @@ const all=async(db,sql,...a)=>(await db.prepare(sql).bind(...a).all()).results;
 const run=(db,sql,...a)=>db.prepare(sql).bind(...a).run();
 const parse=s=>{try{return JSON.parse(s||'{}')}catch{return {}}};
 
-export const DRESS_KEY=/^(d:\d{1,3}|p:[a-f0-9-]{36}|m:[0-2]{4})$/;
+export const DRESS_KEY=/^(d:\d{1,3}|p:[a-f0-9-]{36}|m:[0-3]{4})$/;
 export const cleanDressKey=v=>DRESS_KEY.test(String(v||''))?String(v):'';
 export const LEAD_STATUSES=['new','called','booked','cancelled','declined'];
 export const CLOSED=['booked','cancelled','declined'];
@@ -33,7 +33,7 @@ export async function portfolioIndex(db,salonId){
 export function dressKeyOf(g,index){
  if(g.transfer==='mix'){
   const opts=parse(g.opts),parts=opts.mix_parts;
-  if(parts&&['bodice','skirt','sleeves','neckline'].every(k=>Number.isInteger(parts[k])&&parts[k]>=0&&parts[k]<=2))return 'm:'+['bodice','skirt','sleeves','neckline'].map(k=>parts[k]).join('');
+  if(validMix(parts))return 'm:'+MIX_KEYS.map(k=>parts[k]).join('');
   return '';
  }
  if(g.reference_id){const pid=index.byMedia.get(g.reference_id);return pid?'p:'+pid:''}
@@ -42,7 +42,7 @@ export function dressKeyOf(g,index){
 export function dressName(key,index){
  if(key.startsWith('d:'))return DRESS_STYLES[Number(key.slice(2))]?.[0]||'لباس آماده';
  if(key.startsWith('p:'))return index?.byId.get(key.slice(2))||'لباس حذف‌شدهٔ مزون';
- if(/^m:[0-2]{4}$/.test(key))return 'طرح ترکیبی: '+key.slice(2).split('').map((n,i)=>MIX_COLLECTION[['bodice','skirt','sleeves','neckline'][i]][Number(n)][0]).join(' + ');
+ if(/^m:[0-3]{4}$/.test(key))return 'طرح ترکیبی: '+key.slice(2).split('').map((n,i)=>MIX_COLLECTION[MIX_KEYS[i]][Number(n)][0]).join(' + ');
  return 'نامشخص';
 }
 
