@@ -1,0 +1,32 @@
+name: Audit recent KIE image tasks (read only)
+on:
+  push:
+    branches: [audit/kie-consumption-20261124]
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Confirm cloud account connection
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+      - name: Read-only count by UTC day and result
+        run: |
+          npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT date(created_at/1000,'unixepoch') AS utc_day, kind, state, COUNT(*) AS requests, SUM(CASE WHEN task_id IS NOT NULL THEN 1 ELSE 0 END) AS kie_tasks FROM generations WHERE created_at>=1795132800000 GROUP BY utc_day,kind,state ORDER BY utc_day DESC,kind,state;"
+      - name: Read-only count by boutique and day
+        run: |
+          npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT date(g.created_at/1000,'unixepoch') AS utc_day, COALESCE(s.slug,'unknown') AS boutique_slug, COALESCE(s.name,'unknown') AS boutique_name, g.state, COUNT(*) AS requests, SUM(CASE WHEN g.task_id IS NOT NULL THEN 1 ELSE 0 END) AS kie_tasks FROM generations g LEFT JOIN salons s ON s.id=g.salon_id WHERE g.created_at>=1795132800000 GROUP BY utc_day,boutique_slug,boutique_name,g.state ORDER BY utc_day DESC,requests DESC;"
+      - name: Read-only record summary without personal data
+        run: |
+          npx --yes wrangler@4 d1 execute DB --remote --json --command "SELECT datetime(g.created_at/1000,'unixepoch') AS utc_time, COALESCE(s.slug,'unknown') AS boutique_slug, g.kind, g.state, CASE WHEN g.task_id IS NOT NULL THEN 1 ELSE 0 END AS has_kie_task, CASE WHEN g.result_id IS NOT NULL THEN 1 ELSE 0 END AS has_result FROM generations g LEFT JOIN salons s ON s.id=g.salon_id WHERE g.created_at>=1795132800000 ORDER BY g.created_at DESC LIMIT 100;"
